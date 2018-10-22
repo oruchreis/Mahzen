@@ -1,0 +1,55 @@
+﻿{
+  //Node settings
+  "Node": {
+    //Listen ip address. If you want this node to listen all ip addressed, you should set this settings to "0.0.0.0". Default: localhost/127.0.0.1
+    "ListenIpAddress": "127.0.0.1",
+
+    //Port to bind. Default: 6970
+    "Port": 6970,
+
+    //Internal communication port of the nodes in the cluster. Default: 8100
+    "NodeTalkPort": 8100
+  },
+
+  //The cluster settings used when the cluster initializes.
+  //If the server couldn't find any cluster setup, it will be initialize the cluster with these settings.
+  "ClusterInitialization": {
+    //The name of the cluster
+    "ClusterName": "Mahzen",
+
+    //Ip addresses and ports of the nodes. If the port part is ommited, NodeTalkPort setting will be used. Exp: ["10.0.0.10", "10.0.0.11", "10.0.0.13:8200"]
+    "Nodes": [],
+
+    //If the cluster is not initialized, this setting determines how many nodes will be master. Default: "50%" which is the half of the node count.
+    //If this setting ends with %, it calculates percentage of the node counts.
+    //This setting is not used if the cluster initialized, because master/slave counts can be changed at runtime.
+    "MasterAmount": "50%"
+  },
+
+  //Logging settings
+  "Logging": {
+    //Logging is enbaled or not
+    "IsEnabled": true,
+
+    //Log path
+    "Path": "./logs",
+
+    //Minimum log level. Levels: Verbose, Debug, Information, Warning, Error, Fatal. Default: Information.
+    "MinimumLevel": "Information",
+
+    //Rolling Interval. Infinite, Year, Month, Day, Hour. Default: Day
+    "RollingInterval": "Day",
+
+    //Roll on file size or date. Default: false
+    "RollOnFileSize": false,
+
+    //Rolling File Size, if RollOnFileSize is true. Default: null
+    //"RollingFileSizeBytes": 10485760, //=10mb
+
+    //Retained rolled log file. Default: 30
+    "RetainedFileCount": 30
+  },
+
+  //Stdout message level. Default: Information
+  "StdoutLevel": "Verbose"
+}
