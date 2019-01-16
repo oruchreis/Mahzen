@@ -3,8 +3,10 @@ using Serilog.Events;
 
 namespace Mahzen.Configuration
 {
-    public class Settings
+    class Settings
     {
+        public static Settings Get;
+
         public NodeSettings Node { get; set; }
         public ClusterInitializationSettings ClusterInitialization { get; set; }
         public LoggingSettings Logging { get; set; }

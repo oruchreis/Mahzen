@@ -1,19 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Mahzen.Configuration;
+using Mahzen.Listener;
 using Microsoft.Extensions.Configuration;
 using Mono.Options;
 using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace Mahzen
 {
     class Program
     {
         private const string DefaultConfigPath = "./config.json";
-        public static Settings Settings;
         static void Main(string[] args)
-        {
+        {            
+            Thread.CurrentThread.Name = "MainThread";
+            
+            //getting commandline arguments
             var configPath = DefaultConfigPath;
             var showHelp = false;
             var p = new OptionSet() {
@@ -26,10 +31,9 @@ namespace Mahzen
                   v => showHelp = v != null },
             };
 
-            List<string> arguments;
             try
             {
-                arguments = p.Parse(args);
+                p.Parse(args);
             }
             catch (OptionException e)
             {
@@ -42,7 +46,9 @@ namespace Mahzen
                 p.WriteOptionDescriptions(Console.Out);
                 return;
             }
-
+            
+            
+            //getting config file from configPath
             if (!File.Exists(configPath))
             {
                 Console.WriteLine("Config file does not exists: {0}", configPath);
@@ -55,7 +61,7 @@ namespace Mahzen
                     .AddJsonFile(configPath, optional: false)
                     .AddEnvironmentVariables("Mahzen:")
                     .Build();
-                Settings = config.Get<Settings>();
+                Settings.Get = config.Get<Settings>();
             }
             catch (Exception e)
             {
@@ -63,17 +69,19 @@ namespace Mahzen
                 return;
             }
 
+            
+            //configuring logging
             Serilog.Debugging.SelfLog.Enable(Console.Out);
 
             var loggerConfiguration = new LoggerConfiguration();
 
-            if (Settings.Logging.IsEnabled)
+            if (Settings.Get.Logging.IsEnabled)
             {
                 try
                 {
-                    if (!Directory.Exists(Settings.Logging.Path))
+                    if (!Directory.Exists(Settings.Get.Logging.Path))
                     {
-                        Directory.CreateDirectory(Settings.Logging.Path);
+                        Directory.CreateDirectory(Settings.Get.Logging.Path);
                     }
                 }
                 catch (Exception e)
@@ -83,21 +91,42 @@ namespace Mahzen
 
                 loggerConfiguration = loggerConfiguration.WriteTo.Async(a =>
                     a.File(
-                        $"{Settings.Logging.Path}/Mahzen.log",
-                        Settings.Logging.MinimumLevel,
-                        rollingInterval: Settings.Logging.RollingInterval,
-                        rollOnFileSizeLimit: Settings.Logging.RollOnFileSize,
-                        fileSizeLimitBytes: Settings.Logging.RollingFileSizeBytes,
-                        retainedFileCountLimit: Settings.Logging.RetainedFileCount));
+                        $"{Settings.Get.Logging.Path}/Mahzen.log",
+                        Settings.Get.Logging.MinimumLevel,
+                        rollingInterval: Settings.Get.Logging.RollingInterval,
+                        rollOnFileSizeLimit: Settings.Get.Logging.RollOnFileSize,
+                        fileSizeLimitBytes: Settings.Get.Logging.RollingFileSizeBytes,
+                        retainedFileCountLimit: Settings.Get.Logging.RetainedFileCount));
             }
 
             Log.Logger = loggerConfiguration
-                .WriteTo.Console(Settings.StdoutLevel)
+                .WriteTo.Console(Settings.Get.StdoutLevel, theme: AnsiConsoleTheme.Code)
                 .CreateLogger();               
 
+            //starting...
             Log.Information("Mahzen is starting...");
+            
+            //main cancel token for the app
+            var applicationCancelToken = new CancellationTokenSource();
+            Console.CancelKeyPress += (sender, eventArgs) =>
+            {
+                eventArgs.Cancel = true;
+                Log.Information("Cancellation is requested");
+                applicationCancelToken.Cancel();
+            };
 
-
+            //we are not awaiting this method, it must start on the thread pool instead of this main thread.
+#pragma warning disable 4014
+            new NodeListener(applicationCancelToken.Token).StartAsync();
+#pragma warning restore 4014
+            
+            Log.Information("Mahzen is started.");
+            
+            //we are blocking main app thread until the app cancel token is triggered.
+            WaitHandle.WaitAny(new[] {applicationCancelToken.Token.WaitHandle});
+            
+            //cancel token is requested, stopping.
+            Log.Information("Mahzen is stopped.");
         }
     }
 }

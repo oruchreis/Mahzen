@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <!-- Configurations that affect the Test Framework -->
+    <RunConfiguration>
+        <TargetPlatform>x64</TargetPlatform>
+        <TargetFrameworkVersion>.NETCoreApp,Version=v3.0</TargetFrameworkVersion>
+    </RunConfiguration>
+
+    <MSTest>
+        <MapInconclusiveToFailed>True</MapInconclusiveToFailed>
+        <CaptureTraceOutput>false</CaptureTraceOutput>
+        <DeleteDeploymentDirectoryAfterTestRunIsComplete>False</DeleteDeploymentDirectoryAfterTestRunIsComplete>
+        <DeploymentEnabled>False</DeploymentEnabled>
+    </MSTest>
+
+
+</RunSettings>
