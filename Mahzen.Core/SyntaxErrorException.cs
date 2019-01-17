@@ -11,5 +11,11 @@ namespace Mahzen.Core
         {
             Position = position;
         }
+
+        public SyntaxErrorException(string message, int position, SyntaxErrorException innerException)
+            : base(string.Format(message, position), innerException)
+        {
+            Position = position;
+        }
     }
 }

@@ -53,7 +53,7 @@ namespace Mahzen.Core
     public class ArrayProtocolData : MessageProtocolData
     {
         public override TokenType TokenType => TokenType.Array;
-        public List<MessageProtocolData> Items { get; set; }
+        public MessageProtocolData[] Items { get; set; }
     }
 
     public class MapProtocolData : MessageProtocolData

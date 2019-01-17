@@ -50,16 +50,27 @@ namespace Mahzen.Core
         public List<MessageProtocolData> Parse()
         {
             //EOB: End of Buffer
-            
+
             var result = new List<MessageProtocolData>();
             //first byte is important
             while (ReadNextByte(out var firstByte))
             {
-                var statement = ReadStatement(firstByte);
-                if (statement == null) 
-                    return result; //EOB
-                
-                result.Add(statement);
+                try
+                {
+                    var statement = ReadStatement(firstByte);
+                    if (statement == null)
+                        return result; //EOB
+
+                    result.Add(statement);
+                }
+                catch (SyntaxErrorException e)
+                {
+                    var isTokenType = Enum.IsDefined(typeof(TokenType), firstByte);
+                    if (isTokenType)
+                        throw new SyntaxErrorException($"Invalid {(TokenType)firstByte:g} type format. See inner exception for detail.", _currentPosition, e);
+                    else
+                        throw;
+                }                
             }
 
             return result;
@@ -83,283 +94,339 @@ namespace Mahzen.Core
             {
                 #region Blob
 
-                case (byte) TokenType.Blob:
-                {
-                    if (!ReadInteger(out var length))
+                case (byte)TokenType.Blob:
                     {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ReadInteger(out var length))
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    if (!ReadBytes(length, out var bytes))
-                    {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    if (!ExpectSeparator())
-                    {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ReadBytes(length, out var bytes))
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    return new BlobProtocolData()
-                    {
-                        Bytes = bytes.ToArray()
-                    };
-                }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        return new BlobProtocolData()
+                        {
+                            Bytes = bytes.ToArray()
+                        };
+                    }
 
                 #endregion
 
                 #region Error
 
-                case (byte) TokenType.Error:
-                {
-                    if (!ReadInteger(out var length))
+                case (byte)TokenType.Error:
                     {
-                        //EOB 
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ReadInteger(out var length))
+                        {
+                            //EOB 
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    if (!ReadAsciiString(8, out var errorCode))
-                    {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    if (!ExpectSeparator())
-                    {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ReadAsciiString(8, out var errorCode))
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    if (!ReadUtf8String(length, out var errorMessage))
-                    {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    return new ErrorProtocolData()
-                    {
-                        Code = errorCode,
-                        Message = errorMessage
-                    };
-                }
+                        if (!ReadUtf8String(length, out var errorMessage))
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        return new ErrorProtocolData()
+                        {
+                            Code = errorCode,
+                            Message = errorMessage
+                        };
+                    }
 
                 #endregion
 
                 #region Integer
 
-                case (byte) TokenType.Integer:
-                {
-                    if (!ReadInteger(out var value))
+                case (byte)TokenType.Integer:
                     {
-                        //EOB 
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ReadInteger(out var value))
+                        {
+                            //EOB 
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    return new IntegerProtocolData()
-                    {
-                        Value = value
-                    };
-                }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        return new IntegerProtocolData()
+                        {
+                            Value = value
+                        };
+                    }
 
                 #endregion
 
                 #region Long
 
-                case (byte) TokenType.Long:
-                {
-                    if (!ReadLong(out var value))
+                case (byte)TokenType.Long:
                     {
-                        //EOB 
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ReadLong(out var value))
+                        {
+                            //EOB 
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    return new LongProtocolData()
-                    {
-                        Value = value
-                    };
-                }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        return new LongProtocolData()
+                        {
+                            Value = value
+                        };
+                    }
 
                 #endregion
 
                 #region Double
 
-                case (byte) TokenType.Double:
-                {
-                    if (!ReadDouble(out var value))
+                case (byte)TokenType.Double:
                     {
-                        //EOB 
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ReadDouble(out var value))
+                        {
+                            //EOB 
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    return new DoubleProtocolData()
-                    {
-                        Value = value
-                    };
-                }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        return new DoubleProtocolData()
+                        {
+                            Value = value
+                        };
+                    }
 
                 #endregion
 
                 #region Null
 
-                case (byte) TokenType.Null:
-                {
-                    if (!ExpectSeparator())
+                case (byte)TokenType.Null:
                     {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                    return new NullProtocolData();
-                }
+                        return new NullProtocolData();
+                    }
 
                 #endregion
 
                 #region Boolean
 
-                case (byte) TokenType.True:
-                {
-                    if (!ExpectSeparator())
+                case (byte)TokenType.True:
                     {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        return new BooleanProtocolData
+                        {
+                            Value = true
+                        };
                     }
 
-                    return new BooleanProtocolData
+                case (byte)TokenType.False:
                     {
-                        Value = true
-                    };
-                }
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
-                case (byte) TokenType.False:
-                {
-                    if (!ExpectSeparator())
-                    {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
+                        return new BooleanProtocolData
+                        {
+                            Value = false
+                        };
                     }
-
-                    return new BooleanProtocolData
-                    {
-                        Value = false
-                    };
-                }
 
                 #endregion
 
                 #region Array
 
-                case (byte) TokenType.Array:
-                {
-                    if (!ReadInteger(out var count))
+                case (byte)TokenType.Array:
                     {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
-                    }
-
-                    var items = new List<MessageProtocolData>(count);
-                    for (var i = 0; i < count; i++)
-                    {
-                        if (!ReadNextByte(out var arrayItemFirstByte))
+                        if (!ReadInteger(out var count))
                         {
                             //EOB
                             _currentPosition = commandStartPosition;
                             return null;
                         }
 
-                        var item = ReadStatement(arrayItemFirstByte); 
-                        if (item == null)
+                        if (!ExpectSeparator())
                         {
                             //EOB
                             _currentPosition = commandStartPosition;
                             return null;
                         }
 
-                        items[i] = item;
+                        var items = new MessageProtocolData[count];
+                        for (var i = 0; i < count; i++)
+                        {
+                            if (!ReadNextByte(out var arrayItemFirstByte))
+                            {
+                                //EOB
+                                _currentPosition = commandStartPosition;
+                                return null;
+                            }
+
+                            var item = ReadStatement(arrayItemFirstByte);
+                            if (item == null)
+                            {
+                                //EOB
+                                _currentPosition = commandStartPosition;
+                                return null;
+                            }
+
+                            items[i] = item;
+                        }
+
+                        return new ArrayProtocolData
+                        {
+                            Items = items
+                        };
                     }
-                    
-                    return new ArrayProtocolData
-                    {
-                        Items = items
-                    };
-                }
 
                 #endregion
 
                 #region Map
 
-                case (byte) TokenType.Map:
-                {
-                    if (!ReadInteger(out var count))
+                case (byte)TokenType.Map:
                     {
-                        //EOB
-                        _currentPosition = commandStartPosition;
-                        return null;
+                        if (!ReadInteger(out var count))
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        if (!ExpectSeparator())
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
+
+                        var items = new Dictionary<MessageProtocolData, MessageProtocolData>(count);
+                        for (var i = 0; i < count; i++)
+                        {
+                            if (!ReadNextByte(out var keyFirstByte))
+                            {
+                                //EOB
+                                _currentPosition = commandStartPosition;
+                                return null;
+                            }
+
+                            var key = ReadStatement(keyFirstByte);
+                            if (key == null)
+                            {
+                                //EOB
+                                _currentPosition = commandStartPosition;
+                                return null;
+                            }
+
+                            if (!ReadNextByte(out var valueFirstByte))
+                            {
+                                //EOB
+                                _currentPosition = commandStartPosition;
+                                return null;
+                            }
+
+                            var value = ReadStatement(valueFirstByte);
+                            if (value == null)
+                            {
+                                //EOB
+                                _currentPosition = commandStartPosition;
+                                return null;
+                            }
+
+                            items[key] = value;
+                        }
+
+                        return new MapProtocolData
+                        {
+                            Items = items
+                        };
                     }
-
-                    var items = new Dictionary<MessageProtocolData, MessageProtocolData>(count);
-                    for (var i = 0; i < count; i++)
-                    {
-                        if (!ReadNextByte(out var keyFirstByte))
-                        {
-                            //EOB
-                            _currentPosition = commandStartPosition;
-                            return null;
-                        }
-
-                        var key = ReadStatement(keyFirstByte); 
-                        if (key == null)
-                        {
-                            //EOB
-                            _currentPosition = commandStartPosition;
-                            return null;
-                        }              
-                        
-                        if (!ReadNextByte(out var valueFirstByte))
-                        {
-                            //EOB
-                            _currentPosition = commandStartPosition;
-                            return null;
-                        }
-
-                        var value = ReadStatement(valueFirstByte); 
-                        if (value == null)
-                        {
-                            //EOB
-                            _currentPosition = commandStartPosition;
-                            return null;
-                        }
-
-                        items[key] = value;
-                    }
-                    
-                    return new MapProtocolData
-                    {
-                        Items = items 
-                    };
-                }
 
                 #endregion
-                
-                
+
+
                 default:
-                    throw new SyntaxErrorException("Invalid start character at {0}.", _currentPosition);
+                    throw new SyntaxErrorException($"Invalid start character #{firstByte} at {{0}}.", _currentPosition);
             }
         }
 
@@ -377,44 +444,35 @@ namespace Mahzen.Core
         {
             result = int.MinValue;
             if (_currentPosition + sizeof(int) + 1 >= _buffer.Length)
-                return false;            
-                
-            result = MemoryMarshal.Cast<byte, int>(_buffer.Slice(_currentPosition, sizeof(int)))[0];            
-            _currentPosition += sizeof(int);
-            
-            if (!ExpectSeparator())
                 return false;
-            
+
+            result = MemoryMarshal.Cast<byte, int>(_buffer.Slice(_currentPosition, sizeof(int)))[0];
+            _currentPosition += sizeof(int);
+
             return true;
         }
-        
+
         private bool ReadLong(out long result)
         {
             result = long.MinValue;
             if (_currentPosition + sizeof(long) + 1 >= _buffer.Length)
-                return false;            
-                
-            result = MemoryMarshal.Cast<byte, long>(_buffer.Slice(_currentPosition, sizeof(long)))[0];            
-            _currentPosition += sizeof(long);
-            
-            if (!ExpectSeparator())
                 return false;
-            
+
+            result = MemoryMarshal.Cast<byte, long>(_buffer.Slice(_currentPosition, sizeof(long)))[0];
+            _currentPosition += sizeof(long);
+
             return true;
         }
-        
+
         private bool ReadDouble(out double result)
         {
             result = double.MinValue;
             if (_currentPosition + sizeof(double) + 1 >= _buffer.Length)
-                return false;            
-                
-            result = MemoryMarshal.Cast<byte, double>(_buffer.Slice(_currentPosition, sizeof(double)))[0];            
-            _currentPosition += sizeof(double);
-            
-            if (!ExpectSeparator())
                 return false;
-            
+
+            result = MemoryMarshal.Cast<byte, double>(_buffer.Slice(_currentPosition, sizeof(double)))[0];
+            _currentPosition += sizeof(double);
+
             return true;
         }
 
@@ -425,8 +483,8 @@ namespace Mahzen.Core
                 //EOB
                 return false;
             }
-            if (lastByte != (byte) TokenType.Separator)
-                throw new SyntaxErrorException("Invalid character at {0}. Expecting '\\n' separator", _currentPosition);
+            if (lastByte != (byte)TokenType.Separator)
+                throw new SyntaxErrorException($"Invalid character '{lastByte}' at {{0}}. Expecting '\\n' separator", _currentPosition);
 
             return true;
         }
@@ -438,12 +496,12 @@ namespace Mahzen.Core
                 bytes = Span<byte>.Empty;
                 return false;
             }
-            
+
             bytes = _buffer.Slice(_currentPosition, length);
             _currentPosition += length;
             return true;
         }
-        
+
         private bool ReadString(int length, Encoding encoding, out string result)
         {
             if (_currentPosition + length >= _buffer.Length)
@@ -451,8 +509,8 @@ namespace Mahzen.Core
                 result = string.Empty;
                 return false;
             }
-            
-            result = encoding.GetString(_buffer.Slice(_currentPosition, length));
+
+            result = encoding.GetString(_buffer.Slice(_currentPosition, length)).TrimEnd('\0');
             _currentPosition += length;
             return true;
         }
@@ -461,7 +519,7 @@ namespace Mahzen.Core
         {
             return ReadString(length, Encoding.UTF8, out result);
         }
-        
+
         private bool ReadAsciiString(int length, out string result)
         {
             return ReadString(length, Encoding.ASCII, out result);
