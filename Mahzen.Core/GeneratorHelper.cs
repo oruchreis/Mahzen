@@ -9,7 +9,12 @@ namespace Mahzen.Core
     {
         private const char NewLine = '\n';
 
-        public static void Write(this BinaryWriter binaryWriter, params MessageProtocolData[] datas)
+        public static void Write(this BinaryWriter binaryWriter, params MessageProtocolObject[] datas)
+        {
+            Write(binaryWriter, datas.AsSpan());
+        }
+
+        public static void Write(this BinaryWriter binaryWriter, Span<MessageProtocolObject> datas)
         {
             foreach (var data in datas)
             {
@@ -18,20 +23,24 @@ namespace Mahzen.Core
 
                 switch (data)
                 {
-                    case BlobProtocolData blobProtocolData:
-                        binaryWriter.Write(blobProtocolData.Bytes.Length);
-                        binaryWriter.Write(NewLine);
-                        binaryWriter.Write(blobProtocolData.Bytes);
+                    case StringProtocolObject stringProtocolObject:
+                        binaryWriter.Write(Encoding.UTF8.GetBytes(stringProtocolObject.Value));
                         binaryWriter.Write(NewLine);
                         break;
-                    case ErrorProtocolData errorProtocolData:
-                        var codeBytes = Encoding.ASCII.GetBytes(errorProtocolData.Code);
+                    case BlobProtocolObject blobProtocolObject:
+                        binaryWriter.Write(blobProtocolObject.Bytes.Length);
+                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(blobProtocolObject.Bytes.Span);
+                        binaryWriter.Write(NewLine);
+                        break;
+                    case ErrorProtocolObject errorProtocolObject:
+                        var codeBytes = Encoding.ASCII.GetBytes(errorProtocolObject.Code);
                         if (codeBytes.Length < 8)
                             Array.Resize(ref codeBytes, 8);
                         if (codeBytes.Length > 8)
-                            throw new InvalidOperationException($"Error code is bigger than 8 bytes: {errorProtocolData.Code}");
+                            throw new InvalidOperationException($"Error code is bigger than 8 bytes: {errorProtocolObject.Code}");
 
-                        var messageBytes = Encoding.UTF8.GetBytes(errorProtocolData.Message);
+                        var messageBytes = Encoding.UTF8.GetBytes(errorProtocolObject.Message);
 
                         binaryWriter.Write(messageBytes.Length);
                         binaryWriter.Write(NewLine);
@@ -40,31 +49,31 @@ namespace Mahzen.Core
                         binaryWriter.Write(messageBytes);
                         binaryWriter.Write(NewLine);
                         break;
-                    case IntegerProtocolData integerProtocolData:
-                        binaryWriter.Write(integerProtocolData.Value);
+                    case IntegerProtocolObject integerProtocolObject:
+                        binaryWriter.Write(integerProtocolObject.Value);
                         binaryWriter.Write(NewLine);
                         break;
-                    case LongProtocolData longProtocolData:
-                        binaryWriter.Write(longProtocolData.Value);
+                    case LongProtocolObject longProtocolObject:
+                        binaryWriter.Write(longProtocolObject.Value);
                         binaryWriter.Write(NewLine);
                         break;
-                    case DoubleProtocolData doubleProtocolData:
-                        binaryWriter.Write(doubleProtocolData.Value);
+                    case DoubleProtocolObject doubleProtocolObject:
+                        binaryWriter.Write(doubleProtocolObject.Value);
                         binaryWriter.Write(NewLine);
                         break;
-                    case NullProtocolData nullProtocolData:
-                    case BooleanProtocolData booleanProtocolData:
+                    case NullProtocolObject nullProtocolObject:
+                    case BooleanProtocolObject booleanProtocolObject:
                         binaryWriter.Write(NewLine);
                         break;
-                    case ArrayProtocolData arrayProtocolData:
-                        binaryWriter.Write(arrayProtocolData.Items.Length);
+                    case ArrayProtocolObject arrayProtocolObject:
+                        binaryWriter.Write(arrayProtocolObject.Items.Length);
                         binaryWriter.Write(NewLine);
-                        binaryWriter.Write(arrayProtocolData.Items);
+                        binaryWriter.Write(arrayProtocolObject.Items.Span);
                         break;
-                    case MapProtocolData mapProtocolData:
-                        binaryWriter.Write(mapProtocolData.Items.Count);
+                    case MapProtocolObject mapProtocolObject:
+                        binaryWriter.Write(mapProtocolObject.Items.Length);
                         binaryWriter.Write(NewLine);
-                        foreach (var kv in mapProtocolData.Items)
+                        foreach (var kv in mapProtocolObject.Items.Span)
                         {
                             binaryWriter.Write(kv.Key);
                             binaryWriter.Write(kv.Value);

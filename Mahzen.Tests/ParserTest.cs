@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
@@ -14,21 +14,37 @@ namespace Mahzen.Tests
     [TestClass]
     public class ParserTest
     {
-        /*
-         * MMP Types:
-         * - Blob:          $<length>\n<bytes>\n
-         * - Errors:        !<length>\n<error_code>\n<error_message_utf8_string>\n
-         * - Integer:       i<integer_4_bytes>\n
-         * - Long:          l<long_8_bytes>\n
-         * - Double:        d<double_8_bytes>\n
-         * - Null:          N\n
-         * - Boolean:       0\n or 1\n
-         * - Array:         *<count>\n<items>        =>items can be any type
-         * - Map:           %<count>\n<key><value>   =>key and values can be any type
-         */
-
         private const char NewLine = '\n';
-        
+
+        [TestMethod]
+        public void ReadString()
+        {
+            var expectedString1 = "ASDğĞSDÇŞÖşüğşüöasd";
+            var expectedString2 = "ASDğĞ SDÇŞÖş  üğşüöasd";
+            var expectedString3 = "ASDğĞ SDÇŞÖş  üğşüöasd";
+
+            using (var stream = new MemoryStream())
+            using (var bw = new BinaryWriter(stream))
+            {
+                bw.Write(
+                    new StringProtocolObject { Value = expectedString1 },
+                    new StringProtocolObject { Value = expectedString2 },
+                    new StringProtocolObject { Value = expectedString3 }
+                    );
+
+                Memory<MessageProtocolObject> result = new MessageProtocolObject[1024];
+                var parser = new Parser(stream.GetBuffer().AsSpan().Slice(0, (int)stream.Length), result);
+                parser.Parse();
+                var parsed = result.Span;
+                Assert.IsInstanceOfType(parsed[0], typeof(StringProtocolObject));
+                Assert.AreEqual(expectedString1, (parsed[0] as StringProtocolObject)?.Value);
+                Assert.IsInstanceOfType(parsed[1], typeof(StringProtocolObject));
+                Assert.AreEqual(expectedString2, (parsed[1] as StringProtocolObject)?.Value);
+                Assert.IsInstanceOfType(parsed[2], typeof(StringProtocolObject));
+                Assert.AreEqual(expectedString3, (parsed[2] as StringProtocolObject)?.Value);
+            }
+        }
+
         [TestMethod]
         public void ReadBlob()
         {
@@ -45,21 +61,22 @@ namespace Mahzen.Tests
                 sw.Write(NewLine);
                 stream.ToArray().CopyTo(buffer);
             }            
-            
-            var parser = new Parser(buffer);
-            var result = parser.Parse();
-            
-            Assert.AreEqual(1, result.Count);
-            var parsedBlobData = result[0] as BlobProtocolData; 
+            Memory<MessageProtocolObject> result = new MessageProtocolObject[1024];
+            var parser = new Parser(buffer, result);
+            parser.Parse();
+            var resultSpan = result.Span.Slice(0, parser.ResultIndex);
+            Assert.AreEqual(1, resultSpan.Length);
+            var parsedBlobData = resultSpan[0] as BlobProtocolObject; 
             Assert.IsNotNull(parsedBlobData);
             Assert.AreEqual(TokenType.Blob, parsedBlobData.TokenType);
-            CollectionAssert.AreEqual(expectedBlobData, parsedBlobData.Bytes);
+            CollectionAssert.AreEqual(expectedBlobData, parsedBlobData.Bytes.ToArray());
             Assert.AreEqual(0, parser.RemeaningBuffer.Length);
         }
         
         [TestMethod]
         public void ReadMultiple()
         {
+            var expectedSimpleString = "ASĞPÜÜŞİÖÇçöçğüşi123*09dfgvnhsasq";
             var expectedBlob = Guid.NewGuid().ToByteArray();
             var expectedErrorCode = Encoding.ASCII.GetBytes("00ABC123");
             var expectedErrorMessage = Encoding.UTF8.GetBytes("Deneme error message");
@@ -72,6 +89,9 @@ namespace Mahzen.Tests
             using (var stream = new MemoryStream())
             using (var bw = new BinaryWriter(stream))
             {
+                bw.Write((byte)TokenType.String);
+                bw.Write(Encoding.UTF8.GetBytes(expectedSimpleString));
+                bw.Write(NewLine);
                 //blob
                 bw.Write((byte)TokenType.Blob);
                 bw.Write(expectedBlob.Length);
@@ -157,89 +177,97 @@ namespace Mahzen.Tests
                 bw.Write(NewLine);
                 
                 buffer = stream.ToArray().AsSpan();
-            }            
-            
-            var parser = new Parser(buffer);
-            var result = parser.Parse();
+            }
+
+            Memory<MessageProtocolObject> resultMem = new MessageProtocolObject[1024];
+            var parser = new Parser(buffer, resultMem);
+            parser.Parse();
+
+            var result = resultMem.Span.Slice(0, parser.ResultIndex);
 
             Assert.AreEqual(0, parser.RemeaningBuffer.Length);
-            Assert.AreEqual(10, result.Count);
+            Assert.AreEqual(11, result.Length);
 
-            var parsedBlob = result[0] as BlobProtocolData; 
+            var parsedString = result[0] as StringProtocolObject;
+            Assert.IsInstanceOfType(result[0], typeof(StringProtocolObject));
+            Assert.AreEqual(expectedSimpleString, parsedString.Value);
+
+            var parsedBlob = result[1] as BlobProtocolObject; 
             Assert.IsNotNull(parsedBlob);
             Assert.AreEqual(TokenType.Blob, parsedBlob.TokenType);
-            CollectionAssert.AreEqual(expectedBlob, parsedBlob.Bytes);
+            CollectionAssert.AreEqual(expectedBlob, parsedBlob.Bytes.ToArray());
             
-            var parsedError = result[1] as ErrorProtocolData;
+            var parsedError = result[2] as ErrorProtocolObject;
             Assert.IsNotNull(parsedError);
             Assert.AreEqual(TokenType.Error, parsedError.TokenType);
             CollectionAssert.AreEqual(expectedErrorCode, Encoding.ASCII.GetBytes(parsedError.Code));
             CollectionAssert.AreEqual(expectedErrorMessage, Encoding.UTF8.GetBytes(parsedError.Message));
 
-            var parsedInteger = result[2] as IntegerProtocolData;
+            var parsedInteger = result[3] as IntegerProtocolObject;
             Assert.IsNotNull(parsedInteger);
             Assert.AreEqual(TokenType.Integer, parsedInteger.TokenType);
             Assert.AreEqual(expectedInteger, parsedInteger.Value);
 
-            var parsedLong = result[3] as LongProtocolData;
+            var parsedLong = result[4] as LongProtocolObject;
             Assert.IsNotNull(parsedLong);
             Assert.AreEqual(TokenType.Long, parsedLong.TokenType);
             Assert.AreEqual(expectedLong, parsedLong.Value);
 
-            var parsedDouble = result[4] as DoubleProtocolData;
+            var parsedDouble = result[5] as DoubleProtocolObject;
             Assert.IsNotNull(parsedDouble);
             Assert.AreEqual(TokenType.Double, parsedDouble.TokenType);
             Assert.AreEqual(expectedDouble, parsedDouble.Value);
 
-            var parsedNull = result[5] as NullProtocolData;
+            var parsedNull = result[6] as NullProtocolObject;
             Assert.IsNotNull(parsedNull);
             Assert.AreEqual(TokenType.Null, parsedNull.TokenType);
 
-            var parsedTrue = result[6] as BooleanProtocolData;
+            var parsedTrue = result[7] as BooleanProtocolObject;
             Assert.IsNotNull(parsedTrue);
             Assert.AreEqual(TokenType.True, parsedTrue.TokenType);
             Assert.AreEqual(true, parsedTrue.Value);
 
-            var parsedFalse = result[7] as BooleanProtocolData;
+            var parsedFalse = result[8] as BooleanProtocolObject;
             Assert.IsNotNull(parsedFalse);
             Assert.AreEqual(TokenType.False, parsedFalse.TokenType);
             Assert.AreEqual(false, parsedFalse.Value);
 
-            var parsedArray = result[8] as ArrayProtocolData;
+            var parsedArray = result[9] as ArrayProtocolObject;
             Assert.IsNotNull(parsedArray);
             Assert.AreEqual(TokenType.Array, parsedArray.TokenType);
             Assert.AreEqual(3, parsedArray.Items.Length);
-            var parsedArrayBlob = parsedArray.Items[0] as BlobProtocolData;
+            var parsedArrayItems = parsedArray.Items.Span;
+            var parsedArrayBlob = parsedArrayItems[0] as BlobProtocolObject;
             Assert.IsNotNull(parsedArrayBlob);
             Assert.AreEqual(TokenType.Blob, parsedArrayBlob.TokenType);
-            CollectionAssert.AreEqual(expectedBlob, parsedArrayBlob.Bytes);
-            var parsedArrayInteger = parsedArray.Items[1] as IntegerProtocolData;
+            CollectionAssert.AreEqual(expectedBlob, parsedArrayBlob.Bytes.ToArray());
+            var parsedArrayInteger = parsedArrayItems[1] as IntegerProtocolObject;
             Assert.IsNotNull(parsedArrayInteger);
             Assert.AreEqual(TokenType.Integer, parsedArrayInteger.TokenType);
             Assert.AreEqual(expectedInteger, parsedArrayInteger.Value);
-            var parsedArrayDouble = parsedArray.Items[2] as DoubleProtocolData;
+            var parsedArrayDouble = parsedArrayItems[2] as DoubleProtocolObject;
             Assert.IsNotNull(parsedArrayDouble);
             Assert.AreEqual(TokenType.Double, parsedArrayDouble.TokenType);
             Assert.AreEqual(expectedDouble, parsedArrayDouble.Value);
 
-            var parsedMap = result[9] as MapProtocolData;
+            var parsedMap = result[10] as MapProtocolObject;
             Assert.IsNotNull(parsedMap);
             Assert.AreEqual(TokenType.Map, parsedMap.TokenType);
-            Assert.AreEqual(2, parsedMap.Items.Count);
-            var keyValues = parsedMap.Items.ToArray();
-            var parsedMapKey1Blob = keyValues[0].Key as BlobProtocolData;
+            Assert.AreEqual(2, parsedMap.Items.Length);
+            var keyValues = parsedMap.Items.Span;
+            var parsedMapKey1Blob = keyValues[0].Key as BlobProtocolObject;
             Assert.IsNotNull(parsedMapKey1Blob);
             Assert.AreEqual(TokenType.Blob, parsedMapKey1Blob.TokenType);
-            CollectionAssert.AreEqual(expectedBlob, parsedMapKey1Blob.Bytes);
-            var parsedMapValue1Integer = keyValues[0].Value as IntegerProtocolData;
+            CollectionAssert.AreEqual(expectedBlob, parsedMapKey1Blob.Bytes.ToArray());
+            var parsedMapValue1Integer = keyValues[0].Value as IntegerProtocolObject;
             Assert.IsNotNull(parsedMapValue1Integer);
             Assert.AreEqual(TokenType.Integer, parsedMapValue1Integer.TokenType);
             Assert.AreEqual(expectedInteger, parsedMapValue1Integer.Value);
-            var parsedMapKey2Double = keyValues[1].Key as DoubleProtocolData;
+            var parsedMapKey2Double = keyValues[1].Key as DoubleProtocolObject;
             Assert.IsNotNull(parsedMapKey2Double);
             Assert.AreEqual(TokenType.Double, parsedMapKey2Double.TokenType);
             Assert.AreEqual(expectedDouble, parsedMapKey2Double.Value);
-            var parsedMapValue2Null = keyValues[1].Value as NullProtocolData;
+            var parsedMapValue2Null = keyValues[1].Value as NullProtocolObject;
             Assert.IsNotNull(parsedMapValue2Null);
             Assert.AreEqual(TokenType.Null, parsedMapValue2Null.TokenType);
         }
@@ -258,139 +286,145 @@ namespace Mahzen.Tests
             using (var binaryWriter = new BinaryWriter(memory))
             {
                 binaryWriter.Write(
-                    new BlobProtocolData
+                    new BlobProtocolObject
                     {
                         Bytes = expectedBlob
                     },
-                    new ErrorProtocolData
+                    new ErrorProtocolObject
                     {
                         Code = expectedErrorCode,
                         Message = expectedErrorMessage
                     },
-                    new IntegerProtocolData
+                    new IntegerProtocolObject
                     {
                         Value = expectedInteger
                     },
-                    new LongProtocolData
+                    new LongProtocolObject
                     {
                         Value = expectedLong
                     },
-                    new DoubleProtocolData
+                    new DoubleProtocolObject
                     {
                         Value = expectedDouble
                     },
-                    new NullProtocolData(),
-                    new BooleanProtocolData
+                    new NullProtocolObject(),
+                    new BooleanProtocolObject
                     {
                         Value = true
                     },
-                    new BooleanProtocolData
+                    new BooleanProtocolObject
                     {
                         Value = false
                     },
-                    new ArrayProtocolData
+                    new ArrayProtocolObject
                     {
-                        Items = new MessageProtocolData[]
+                        Items = new MessageProtocolObject[]
                         {
-                            new BlobProtocolData
+                            new BlobProtocolObject
                             {
                                 Bytes = expectedBlob
                             },
-                            new IntegerProtocolData
+                            new IntegerProtocolObject
                             {
                                 Value = expectedInteger
                             },
-                            new DoubleProtocolData
+                            new DoubleProtocolObject
                             {
                                 Value = expectedDouble
                             }
                         }
                     },
-                    new MapProtocolData
+                    new MapProtocolObject
                     {
-                        Items = new Dictionary<MessageProtocolData, MessageProtocolData>
+                        Items = new KeyValuePair<MessageProtocolObject, MessageProtocolObject>[]
                         {
-                            [new BlobProtocolData { Bytes = expectedBlob }] = new IntegerProtocolData { Value = expectedInteger },
-                            [new DoubleProtocolData { Value = expectedDouble }] = new NullProtocolData()
+                            new KeyValuePair<MessageProtocolObject, MessageProtocolObject>(new BlobProtocolObject { Bytes = expectedBlob }, new IntegerProtocolObject { Value = expectedInteger }),
+                            new KeyValuePair<MessageProtocolObject, MessageProtocolObject>(new DoubleProtocolObject { Value = expectedDouble }, new NullProtocolObject())
                         }
                     });
 
                 var buffer = memory.ToArray().AsSpan();
-                var parser = new Parser(buffer.Slice(0, 50));
-                var parsed = parser.Parse();
+                Memory<MessageProtocolObject> resultMem = new MessageProtocolObject[1024];                
+                var parser = new Parser(buffer.Slice(0, 50), resultMem);
+                parser.Parse();
+
+                var parsed = resultMem.Span.Slice(0, parser.ResultIndex);
 
                 Assert.AreEqual(27, parser.RemeaningBuffer.Length);
 
-                var parsedBlob = parsed[0] as BlobProtocolData;
-                Assert.IsInstanceOfType(parsed[0], typeof(BlobProtocolData));
-                CollectionAssert.AreEqual(expectedBlob, parsedBlob.Bytes);
+                var parsedBlob = parsed[0] as BlobProtocolObject;
+                Assert.IsInstanceOfType(parsed[0], typeof(BlobProtocolObject));
+                CollectionAssert.AreEqual(expectedBlob, parsedBlob.Bytes.ToArray());
 
-                parser.Reset(buffer.Slice(50, 50));
-                parsed = parser.Parse();
+                parser.SlideBuffer(buffer.Slice(50, 50));
+                parser.Parse();
+                parsed = resultMem.Span.Slice(0, parser.ResultIndex);
 
                 Assert.AreEqual(9, parser.RemeaningBuffer.Length);
 
-                var parsedError = parsed[0] as ErrorProtocolData;
-                Assert.IsInstanceOfType(parsed[0], typeof(ErrorProtocolData));
+                var parsedError = parsed[1] as ErrorProtocolObject;
+                Assert.IsInstanceOfType(parsed[1], typeof(ErrorProtocolObject));
                 Assert.AreEqual(expectedErrorCode, parsedError.Code);
                 Assert.AreEqual(expectedErrorMessage, parsedError.Message);
 
-                var parsedInteger = parsed[1] as IntegerProtocolData;
-                Assert.IsInstanceOfType(parsed[1], typeof(IntegerProtocolData));
+                var parsedInteger = parsed[2] as IntegerProtocolObject;
+                Assert.IsInstanceOfType(parsed[2], typeof(IntegerProtocolObject));
                 Assert.AreEqual(expectedInteger, parsedInteger.Value);
 
-                var parsedLong = parsed[2] as LongProtocolData;
-                Assert.IsInstanceOfType(parsed[2], typeof(LongProtocolData));
+                var parsedLong = parsed[3] as LongProtocolObject;
+                Assert.IsInstanceOfType(parsed[3], typeof(LongProtocolObject));
                 Assert.AreEqual(expectedLong, parsedLong.Value);
 
-                var parsedDouble = parsed[3] as DoubleProtocolData;
-                Assert.IsInstanceOfType(parsed[3], typeof(DoubleProtocolData));
+                var parsedDouble = parsed[4] as DoubleProtocolObject;
+                Assert.IsInstanceOfType(parsed[4], typeof(DoubleProtocolObject));
                 Assert.AreEqual(expectedDouble, parsedDouble.Value);
 
-                var parsedNull = parsed[4] as NullProtocolData;
-                Assert.IsInstanceOfType(parsed[4], typeof(NullProtocolData));
+                var parsedNull = parsed[5] as NullProtocolObject;
+                Assert.IsInstanceOfType(parsed[5], typeof(NullProtocolObject));
 
-                var parsedTrue = parsed[5] as BooleanProtocolData;
-                Assert.IsInstanceOfType(parsed[5], typeof(BooleanProtocolData));
+                var parsedTrue = parsed[6] as BooleanProtocolObject;
+                Assert.IsInstanceOfType(parsed[6], typeof(BooleanProtocolObject));
                 Assert.AreEqual(true, parsedTrue.Value);
 
-                var parsedFalse = parsed[6] as BooleanProtocolData;
-                Assert.IsInstanceOfType(parsed[6], typeof(BooleanProtocolData));
+                var parsedFalse = parsed[7] as BooleanProtocolObject;
+                Assert.IsInstanceOfType(parsed[7], typeof(BooleanProtocolObject));
                 Assert.AreEqual(false, parsedFalse.Value);
 
-                parser.Reset(buffer.Slice(100));
-                parsed = parser.Parse();
+                parser.SlideBuffer(buffer.Slice(100));
+                parser.Parse();
+                parsed = resultMem.Span.Slice(0, parser.ResultIndex);
 
                 Assert.AreEqual(0, parser.RemeaningBuffer.Length);
 
-                var parsedArray = parsed[0] as ArrayProtocolData;
-                Assert.IsInstanceOfType(parsed[0], typeof(ArrayProtocolData));
+                var parsedArray = parsed[8] as ArrayProtocolObject;
+                Assert.IsInstanceOfType(parsed[8], typeof(ArrayProtocolObject));
                 Assert.AreEqual(3, parsedArray.Items.Length);
-                var parsedArrayBlob = parsedArray.Items[0] as BlobProtocolData;
-                Assert.IsInstanceOfType(parsedArray.Items[0], typeof(BlobProtocolData));
-                CollectionAssert.AreEqual(expectedBlob, parsedArrayBlob.Bytes);
-                var parsedArrayInteger = parsedArray.Items[1] as IntegerProtocolData;
-                Assert.IsInstanceOfType(parsedArray.Items[1], typeof(IntegerProtocolData));
+                var parsedArrayItems = parsedArray.Items.Span;
+                var parsedArrayBlob = parsedArrayItems[0] as BlobProtocolObject;
+                Assert.IsInstanceOfType(parsedArrayItems[0], typeof(BlobProtocolObject));
+                CollectionAssert.AreEqual(expectedBlob, parsedArrayBlob.Bytes.ToArray());
+                var parsedArrayInteger = parsedArrayItems[1] as IntegerProtocolObject;
+                Assert.IsInstanceOfType(parsedArrayItems[1], typeof(IntegerProtocolObject));
                 Assert.AreEqual(expectedInteger, parsedArrayInteger.Value);
-                var parsedArrayDouble = parsedArray.Items[2] as DoubleProtocolData;
-                Assert.IsInstanceOfType(parsedArray.Items[2], typeof(DoubleProtocolData));
+                var parsedArrayDouble = parsedArrayItems[2] as DoubleProtocolObject;
+                Assert.IsInstanceOfType(parsedArrayItems[2], typeof(DoubleProtocolObject));
                 Assert.AreEqual(expectedDouble, parsedArrayDouble.Value);
 
-                var parsedMap = parsed[1] as MapProtocolData;
-                Assert.IsInstanceOfType(parsed[1], typeof(MapProtocolData));
-                Assert.AreEqual(2, parsedMap.Items.Count);
-                var keyValues = parsedMap.Items.ToArray();
-                var parsedMapKey1Blob = keyValues[0].Key as BlobProtocolData;
-                Assert.IsInstanceOfType(keyValues[0].Key, typeof(BlobProtocolData));
-                CollectionAssert.AreEqual(expectedBlob, parsedMapKey1Blob.Bytes);
-                var parsedMapValue1Integer = keyValues[0].Value as IntegerProtocolData;
-                Assert.IsInstanceOfType(keyValues[0].Value, typeof(IntegerProtocolData));
+                var parsedMap = parsed[9] as MapProtocolObject;
+                Assert.IsInstanceOfType(parsed[9], typeof(MapProtocolObject));
+                Assert.AreEqual(2, parsedMap.Items.Length);
+                var keyValues = parsedMap.Items.Span;
+                var parsedMapKey1Blob = keyValues[0].Key as BlobProtocolObject;
+                Assert.IsInstanceOfType(keyValues[0].Key, typeof(BlobProtocolObject));
+                CollectionAssert.AreEqual(expectedBlob, parsedMapKey1Blob.Bytes.ToArray());
+                var parsedMapValue1Integer = keyValues[0].Value as IntegerProtocolObject;
+                Assert.IsInstanceOfType(keyValues[0].Value, typeof(IntegerProtocolObject));
                 Assert.AreEqual(expectedInteger, parsedMapValue1Integer.Value);
-                var parsedMapKey2Double = keyValues[1].Key as DoubleProtocolData;
-                Assert.IsInstanceOfType(keyValues[1].Key, typeof(DoubleProtocolData));
+                var parsedMapKey2Double = keyValues[1].Key as DoubleProtocolObject;
+                Assert.IsInstanceOfType(keyValues[1].Key, typeof(DoubleProtocolObject));
                 Assert.AreEqual(expectedDouble, parsedMapKey2Double.Value);
-                var parsedMapValue2Null = keyValues[1].Value as NullProtocolData;
-                Assert.IsInstanceOfType(keyValues[1].Value, typeof(NullProtocolData));
+                var parsedMapValue2Null = keyValues[1].Value as NullProtocolObject;
+                Assert.IsInstanceOfType(keyValues[1].Value, typeof(NullProtocolObject));
             }
         }
     }

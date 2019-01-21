@@ -3,62 +3,68 @@ using System.Collections.Generic;
 
 namespace Mahzen.Core
 {
-    public abstract class MessageProtocolData
+    public abstract class MessageProtocolObject
     {
         public abstract TokenType TokenType { get; }
     }
 
-    public class BlobProtocolData : MessageProtocolData
+    public class StringProtocolObject: MessageProtocolObject
     {
-        public override TokenType TokenType => TokenType.Blob;
-        public byte[] Bytes { get; set; }
+        public override TokenType TokenType => TokenType.String;
+        public string Value { get; set; }
     }
 
-    public class ErrorProtocolData : MessageProtocolData
+    public class BlobProtocolObject : MessageProtocolObject
+    {
+        public override TokenType TokenType => TokenType.Blob;
+        public Memory<byte> Bytes { get; set; }
+    }
+
+    public class ErrorProtocolObject : MessageProtocolObject
     {
         public override TokenType TokenType => TokenType.Error;
         public string Code { get; set; } //8byte
         public string Message { get; set; }
     }
 
-    public class IntegerProtocolData : MessageProtocolData
+    public class IntegerProtocolObject : MessageProtocolObject
     {
         public override TokenType TokenType => TokenType.Integer;
         public int Value { get; set; }
     }
     
-    public class LongProtocolData : MessageProtocolData
+    public class LongProtocolObject : MessageProtocolObject
     {
         public override TokenType TokenType => TokenType.Long;
         public long Value { get; set; }
     }
     
-    public class DoubleProtocolData : MessageProtocolData
+    public class DoubleProtocolObject : MessageProtocolObject
     {
         public override TokenType TokenType => TokenType.Double;
         public double Value { get; set; }
     }
 
-    public class NullProtocolData : MessageProtocolData
+    public class NullProtocolObject : MessageProtocolObject
     {
         public override TokenType TokenType => TokenType.Null;
     }
 
-    public class BooleanProtocolData : MessageProtocolData
+    public class BooleanProtocolObject : MessageProtocolObject
     {
         public bool Value { get; set; }
         public override TokenType TokenType => Value ? TokenType.True : TokenType.False;
     }
 
-    public class ArrayProtocolData : MessageProtocolData
+    public class ArrayProtocolObject : MessageProtocolObject
     {
         public override TokenType TokenType => TokenType.Array;
-        public MessageProtocolData[] Items { get; set; }
+        public Memory<MessageProtocolObject> Items { get; set; }
     }
 
-    public class MapProtocolData : MessageProtocolData
+    public class MapProtocolObject : MessageProtocolObject
     {
         public override TokenType TokenType => TokenType.Map;
-        public Dictionary<MessageProtocolData, MessageProtocolData> Items { get; set; }
+        public Memory<KeyValuePair<MessageProtocolObject, MessageProtocolObject>> Items { get; set; }
     }
 }

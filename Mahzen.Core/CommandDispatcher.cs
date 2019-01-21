@@ -19,7 +19,11 @@ namespace Mahzen.Core
 
         public async Task HandleAsync()
         {
-            var requests = await MessageProtocolSerializer.ReadStreamAsync(_stream);
+            var commands = await CommandSerializer.DeserializeAsync(_stream);
+            foreach (var command in commands)
+            {
+
+            }
         }
     }
 }

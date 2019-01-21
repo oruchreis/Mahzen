@@ -7,26 +7,17 @@ using System.Text;
 namespace Mahzen.Core
 {
     /* Mahzen Message Protocol(MMP) Format
-     *
+     * 
      * This format is similar to RESP format,
      * but I have changed some parts as a design decision
-     *
-     * Single Command Request: <array>
-     *     - Single Command Array:
-     *         0: <command_keyword_string>
-     *         1-n: parameters
-     * Single Command Response: <mmp_type>
-     *
-     * Pipelining Commands: We can send multiple commands separating with \n byte:  
-     *     Multi Command Request: <single_command_request>\n<single_command_request>         
-     *     Multi Command Response: <array_of_mmp_types>
      * 
      * MMP Types:
-     * - Blob:          $<length>\n<bytes>\n
+     * - SimpleString:  $<utf8_bytes_without_'\n'>\n
+     * - Blob:          B<length>\n<bytes>\n
      * - Errors:        !<length>\n<error_code>\n<error_message_utf8_string>\n
-     * - Integer:       i<integer_4_bytes>\n
-     * - Long:          l<long_8_bytes>\n
-     * - Double:        d<double_8_bytes>\n
+     * - Integer:       I<integer_4_bytes>\n
+     * - Long:          L<long_8_bytes>\n
+     * - Double:        D<double_8_bytes>\n
      * - Null:          N\n
      * - Boolean:       0\n or 1\n
      * - Array:         *<count>\n<items>        =>items can be any type
@@ -40,28 +31,42 @@ namespace Mahzen.Core
     public ref struct Parser
     {
         private Span<byte> _buffer;
+        private Memory<MessageProtocolObject> _result;
+        private int _resultIndex;
         private int _currentPosition;
-        public Parser(Span<byte> buffer)
+        private Action _resizeResult;
+
+        public Parser(Span<byte> buffer, Memory<MessageProtocolObject> result, Action resizeResult = null)
         {
             _buffer = buffer;
+            _result = result;
             _currentPosition = 0;
+            _resultIndex = 0;
+            _resizeResult = resizeResult;
         }
 
-        public List<MessageProtocolData> Parse()
+        public void Parse()
         {
             //EOB: End of Buffer
 
-            var result = new List<MessageProtocolData>();
+            var span = _result.Span;
             //first byte is important
             while (ReadNextByte(out var firstByte))
             {
                 try
                 {
-                    var statement = ReadStatement(firstByte);
-                    if (statement == null)
-                        return result; //EOB
+                    var commandStartPosition = _currentPosition - 1;
+                    var protocolObject = ReadProtocolObject(firstByte);
+                    if (protocolObject == null)
+                        return; //EOB
+                    if (_resultIndex + 1 >= span.Length) //result is full, need more space.
+                    {
+                        if (_resizeResult == null)
+                            throw new BufferOverflowException("The result buffer given to parser is not enough to hold parser results. Use resizeResult parameter to expand the buffer.");
+                        _resizeResult();
+                    }
 
-                    result.Add(statement);
+                    span[_resultIndex++] = protocolObject;
                 }
                 catch (SyntaxErrorException e)
                 {
@@ -69,16 +74,15 @@ namespace Mahzen.Core
                     if (isTokenType)
                         throw new SyntaxErrorException($"Invalid {(TokenType)firstByte:g} type format. See inner exception for detail.", _currentPosition, e);
                     else
-                        throw;
-                }                
+                        throw e;
+                }
             }
-
-            return result;
         }
 
         public Span<byte> RemeaningBuffer => _buffer.Slice(_currentPosition);
+        public int ResultIndex => _resultIndex;
 
-        public void Reset(Span<byte> nextBuffer)
+        public void SlideBuffer(Span<byte> nextBuffer)
         {
             var newBuffer = new Span<byte>(new byte[RemeaningBuffer.Length + nextBuffer.Length]);
             RemeaningBuffer.CopyTo(newBuffer.Slice(0, RemeaningBuffer.Length));
@@ -87,13 +91,28 @@ namespace Mahzen.Core
             _currentPosition = 0;
         }
 
-        private MessageProtocolData ReadStatement(byte firstByte)
+        private MessageProtocolObject ReadProtocolObject(byte firstByte)
         {
             var commandStartPosition = _currentPosition - 1;
             switch (firstByte)
             {
-                #region Blob
+                #region Simple String
+                case (byte)TokenType.String:
+                    {
+                        if (!ReadUntil(new[] { (byte)TokenType.Separator }, out var bytes))
+                        {
+                            //EOB
+                            _currentPosition = commandStartPosition;
+                            return null;
+                        }
 
+                        return new StringProtocolObject()
+                        {
+                            Value = Encoding.UTF8.GetString(bytes)
+                        };
+                    }
+                #endregion
+                #region Blob
                 case (byte)TokenType.Blob:
                     {
                         if (!ReadInteger(out var length))
@@ -124,7 +143,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new BlobProtocolData()
+                        return new BlobProtocolObject()
                         {
                             Bytes = bytes.ToArray()
                         };
@@ -178,7 +197,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new ErrorProtocolData()
+                        return new ErrorProtocolObject()
                         {
                             Code = errorCode,
                             Message = errorMessage
@@ -205,7 +224,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new IntegerProtocolData()
+                        return new IntegerProtocolObject()
                         {
                             Value = value
                         };
@@ -231,7 +250,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new LongProtocolData()
+                        return new LongProtocolObject()
                         {
                             Value = value
                         };
@@ -257,7 +276,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new DoubleProtocolData()
+                        return new DoubleProtocolObject()
                         {
                             Value = value
                         };
@@ -276,7 +295,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new NullProtocolData();
+                        return new NullProtocolObject();
                     }
 
                 #endregion
@@ -292,7 +311,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new BooleanProtocolData
+                        return new BooleanProtocolObject
                         {
                             Value = true
                         };
@@ -307,7 +326,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        return new BooleanProtocolData
+                        return new BooleanProtocolObject
                         {
                             Value = false
                         };
@@ -333,7 +352,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        var items = new MessageProtocolData[count];
+                        var items = new MessageProtocolObject[count];
                         for (var i = 0; i < count; i++)
                         {
                             if (!ReadNextByte(out var arrayItemFirstByte))
@@ -343,7 +362,7 @@ namespace Mahzen.Core
                                 return null;
                             }
 
-                            var item = ReadStatement(arrayItemFirstByte);
+                            var item = ReadProtocolObject(arrayItemFirstByte);
                             if (item == null)
                             {
                                 //EOB
@@ -354,7 +373,7 @@ namespace Mahzen.Core
                             items[i] = item;
                         }
 
-                        return new ArrayProtocolData
+                        return new ArrayProtocolObject
                         {
                             Items = items
                         };
@@ -380,7 +399,7 @@ namespace Mahzen.Core
                             return null;
                         }
 
-                        var items = new Dictionary<MessageProtocolData, MessageProtocolData>(count);
+                        var items = new KeyValuePair<MessageProtocolObject, MessageProtocolObject>[count];
                         for (var i = 0; i < count; i++)
                         {
                             if (!ReadNextByte(out var keyFirstByte))
@@ -390,7 +409,7 @@ namespace Mahzen.Core
                                 return null;
                             }
 
-                            var key = ReadStatement(keyFirstByte);
+                            var key = ReadProtocolObject(keyFirstByte);
                             if (key == null)
                             {
                                 //EOB
@@ -405,7 +424,7 @@ namespace Mahzen.Core
                                 return null;
                             }
 
-                            var value = ReadStatement(valueFirstByte);
+                            var value = ReadProtocolObject(valueFirstByte);
                             if (value == null)
                             {
                                 //EOB
@@ -413,10 +432,10 @@ namespace Mahzen.Core
                                 return null;
                             }
 
-                            items[key] = value;
+                            items[i] = new KeyValuePair<MessageProtocolObject, MessageProtocolObject>(key, value);
                         }
 
-                        return new MapProtocolData
+                        return new MapProtocolObject
                         {
                             Items = items
                         };
@@ -437,6 +456,20 @@ namespace Mahzen.Core
                 return false;
 
             result = _buffer[_currentPosition++];
+            return true;
+        }
+
+        private bool ReadUntil(Span<byte> searchBytes, out Span<byte> result)
+        {
+            var lastPos = _buffer.Slice(_currentPosition).IndexOf(searchBytes);
+            if (lastPos == -1)
+            {
+                result = Span<byte>.Empty;
+                return false;
+            }
+
+            result = _buffer.Slice(_currentPosition, lastPos);
+            _currentPosition += lastPos + 1;
             return true;
         }
 
