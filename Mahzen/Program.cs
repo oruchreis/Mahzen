@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Mahzen.Configuration;
+using Mahzen.Core;
 using Mahzen.Listener;
 using Microsoft.Extensions.Configuration;
 using Mono.Options;
@@ -106,6 +107,11 @@ namespace Mahzen
             //starting...
             Log.Information("Mahzen is starting...");
             
+            //Default command invokers
+            CommandDispatcher.RegisterInvoker(
+                new ClusterCommandInvoker(), //order is important, cluster must be first for the priority
+                new StorageCommandInvoker());
+
             //main cancel token for the app
             var applicationCancelToken = new CancellationTokenSource();
             Console.CancelKeyPress += (sender, eventArgs) =>

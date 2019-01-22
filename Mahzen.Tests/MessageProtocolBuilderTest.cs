@@ -25,7 +25,7 @@ namespace Mahzen.Tests
                         ab => ab.Write(5),
                         ab => ab.Write(1.2d),
                         ab => ab.Write((long)int.MaxValue + 1),
-                        ab => ab.Write("errorcod", "error message"));
+                        ab => ab.WriteError("errorcod", "error message"));
 
                     await builder.FlushAsync();
                     Assert.IsTrue(memoryStream.Length > 0);

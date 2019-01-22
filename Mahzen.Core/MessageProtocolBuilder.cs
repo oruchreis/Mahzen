@@ -13,7 +13,7 @@ namespace Mahzen.Core
         void Write(double value);
         void Write(long value);
         void Write(bool value);
-        void Write(string errorCode, string errorMessage);
+        void WriteError(string errorCode, string errorMessage);
         void WriteNull();
         void Write(params Action<IProtocolBuilder>[] arrayItemBuilders);
         void Write(params (Action<IProtocolBuilder> KeyBuilder, Action<IProtocolBuilder> ValueBuilder)[] mapItemBuilders);
@@ -51,7 +51,12 @@ namespace Mahzen.Core
             HandleWrite(new BooleanProtocolObject { Value = value });
         }
 
-        public virtual void Write(string errorCode, string errorMessage)
+        public virtual void WriteError(Error error)
+        {
+            WriteError(error.Code, error.Message);
+        }
+
+        public virtual void WriteError(string errorCode, string errorMessage)
         {
             HandleWrite(new ErrorProtocolObject { Code = errorCode, Message = errorMessage });
         }
