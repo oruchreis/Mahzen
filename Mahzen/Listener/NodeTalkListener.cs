@@ -10,17 +10,17 @@ using Serilog;
 
 namespace Mahzen.Listener
 {
-    public class NodeListener
+    public class NodeTalkListener
     {
         private readonly CancellationToken _cancelToken;
         private readonly TcpListener _listener;
 
-        private readonly ConcurrentDictionary<TcpClient, bool> _connectedClients = new ConcurrentDictionary<TcpClient, bool>();
+        private readonly ConcurrentDictionary<TcpClient, bool> _connectedNodes = new ConcurrentDictionary<TcpClient, bool>();
 
-        public NodeListener(CancellationToken cancelToken)
+        public NodeTalkListener(CancellationToken cancelToken)
         {
             _cancelToken = cancelToken;
-            _listener = new TcpListener(IPAddress.Parse(Settings.Get.Node.ListenIpAddress), Settings.Get.Node.Port);
+            _listener = new TcpListener(IPAddress.Parse(Settings.Get.Node.ListenIpAddress), Settings.Get.Node.NodeTalkPort);
         }
 
         public async Task StartAsync()
@@ -28,7 +28,7 @@ namespace Mahzen.Listener
             await Task.Yield();
 
             _listener.Start();
-            Log.Information("Listening socket {0}", _listener.LocalEndpoint);
+            Log.Information("Node talk listener started at {0}", _listener.LocalEndpoint);
 
             //listener must be active until the cancel token is requested.
             while (!_cancelToken.IsCancellationRequested)
@@ -52,7 +52,7 @@ namespace Mahzen.Listener
                 }
                 catch (Exception e)
                 {
-                    Log.Error(e, "Error occured when accepting client.");
+                    Log.Error(e, "Error occured when accepting a node.");
                 }
             }
         }
@@ -61,16 +61,16 @@ namespace Mahzen.Listener
         {
             await Task.Yield();
 
-            //registering client
-            _connectedClients[tcpClient] = true;
-            Log.Debug("Client is connected: {0}", tcpClient.Client.LocalEndPoint);
+            //registering node
+            _connectedNodes[tcpClient] = true;
+            Log.Debug("Node is connected: {0}", tcpClient.Client.LocalEndPoint);
 
             try
             {
                 var stream = tcpClient.GetStream();
-                using (var dispatcher = new NetworkCommandDispatcher(stream, _cancelToken))
+                using (var dispatcher = new NodeTalkCommandDispatcher(stream, _cancelToken))
                 {
-                    //while client is connected, we listen the stream.
+                    //while node is connected, we listen the stream.
                     while (tcpClient.Connected && !_cancelToken.IsCancellationRequested)
                     {
                         //main message pipeline:
@@ -80,14 +80,14 @@ namespace Mahzen.Listener
             }
             catch (Exception e)
             {
-                Log.Error(e, "Error occured when handling connection.");
+                Log.Error(e, "Error occured when handling node talk connection.");
             }
             finally
             {
                 //unregistering client
-                _connectedClients[tcpClient] = false;
-                _connectedClients.TryRemove(tcpClient, out var _);
-                Log.Debug("Client is disconnected: {0}", tcpClient.Client.LocalEndPoint);
+                _connectedNodes[tcpClient] = false;
+                _connectedNodes.TryRemove(tcpClient, out var _);
+                Log.Debug("Node is disconnected: {0}", tcpClient.Client.LocalEndPoint);
 
                 tcpClient.Dispose();//disposing client and the stream.
             }

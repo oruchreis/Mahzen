@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Mahzen.Core
 {
     /// <summary>
-    /// Responsible for invoking commands.
+    /// Responsible for invoking commands. This will be used as a singleton by the server.
     /// </summary>
     public interface ICommandInvoker
     {

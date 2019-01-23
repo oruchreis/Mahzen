@@ -41,7 +41,7 @@ namespace Mahzen.Core
         /// Gets the registered invokers. It will use a read lock, so use wisely.
         /// </summary>
         /// <returns></returns>
-        public static ICollection<ICommandInvoker> GetInvokers()
+        public static ICommandInvoker[] GetInvokers()
         {
             _invokersLocker.EnterReadLock();
             try

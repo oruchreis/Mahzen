@@ -121,8 +121,9 @@ namespace Mahzen
                 applicationCancelToken.Cancel();
             };
 
-            //we are not awaiting this method, it must start on the thread pool instead of this main thread.
 #pragma warning disable 4014
+            //we are not awaiting these methods, it must start on the thread pool instead of this main thread.
+            new NodeTalkListener(applicationCancelToken.Token).StartAsync();
             new NodeListener(applicationCancelToken.Token).StartAsync();
 #pragma warning restore 4014
             
