@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Applications", "Application
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Management", "Mahzen.Management\Mahzen.Management.csproj", "{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Client.Test", "Mahzen.Client.Test\Mahzen.Client.Test.csproj", "{E0FCA841-6408-486B-8550-667C6AA93AB5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0FCA841-6408-486B-8550-667C6AA93AB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0FCA841-6408-486B-8550-667C6AA93AB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0FCA841-6408-486B-8550-667C6AA93AB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0FCA841-6408-486B-8550-667C6AA93AB5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,6 +70,7 @@ Global
 		{013A2865-81A3-47F0-A6E5-D818BCAE776F} = {04F9E38E-AD69-4E80-902A-A9A0920B1CFE}
 		{3C048329-9C99-4D6F-9D52-3A7B065171C7} = {DC068818-3019-4CBE-9955-6734C8BBD5B1}
 		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB} = {04F9E38E-AD69-4E80-902A-A9A0920B1CFE}
+		{E0FCA841-6408-486B-8550-667C6AA93AB5} = {A48EEC69-396D-42B6-A866-634A44664BF1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6928BE58-7D47-4F29-89B6-D7504B645477}
