@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28010.2046
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen", "Mahzen\Mahzen.csproj", "{DB407345-88FC-4BD2-9975-83FC3E65C550}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Tests", "Mahzen.Tests\Mahzen.Tests.csproj", "{A17C520A-F5E8-462B-B757-D17251DE4020}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Core.Test", "Mahzen.Core.Test\Mahzen.Core.Test.csproj", "{A17C520A-F5E8-462B-B757-D17251DE4020}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Core", "Mahzen.Core\Mahzen.Core.csproj", "{674E349A-F2AF-41BA-BE63-72C34001205A}"
 EndProject
