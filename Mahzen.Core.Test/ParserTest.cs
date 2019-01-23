@@ -9,7 +9,7 @@ using System.Text;
 using Mahzen.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Mahzen.Tests
+namespace Mahzen.Core.Test
 {
     [TestClass]
     public class ParserTest

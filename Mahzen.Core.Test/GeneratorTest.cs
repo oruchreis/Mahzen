@@ -7,7 +7,7 @@ using Mahzen.Core;
 using System.Linq;
 using System.Diagnostics;
 
-namespace Mahzen.Tests
+namespace Mahzen.Core.Test
 {
     [TestClass]
     public class GeneratorTest

@@ -21,6 +21,8 @@ namespace Mahzen.Core
                 var invokers = GetInvokers();
                 foreach (var command in commands)
                 {
+                    if (CancelToken.IsCancellationRequested)
+                        return;
                     using (new CommandContext(command, Response))
                     {
                         var invoked = false;

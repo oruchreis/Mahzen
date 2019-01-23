@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Mahzen.Tests
+namespace Mahzen.Core.Test
 {
     [TestClass]
     public class MessageProtocolBuilderTest
