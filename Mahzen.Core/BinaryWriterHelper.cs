@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿#if !NET472
+using System;
 using System.IO;
 using System.Text;
 
@@ -10,7 +10,7 @@ namespace Mahzen.Core
     /// </summary>
     public static class BinaryWriterHelper
     {
-        private const char NewLine = '\n';
+        private const byte Separator = (byte) TokenType.Separator;
 
         /// <summary>
         /// Writes multiple <see cref="MessageProtocolObject"/> to the <paramref name="binaryWriter"/>
@@ -38,13 +38,13 @@ namespace Mahzen.Core
                 {
                     case StringProtocolObject stringProtocolObject:
                         binaryWriter.Write(Encoding.UTF8.GetBytes(stringProtocolObject.Value));
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         break;
                     case BlobProtocolObject blobProtocolObject:
                         binaryWriter.Write(blobProtocolObject.Bytes.Length);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         binaryWriter.Write(blobProtocolObject.Bytes.Span);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         break;
                     case ErrorProtocolObject errorProtocolObject:
                         var codeBytes = Encoding.ASCII.GetBytes(errorProtocolObject.Code);
@@ -56,36 +56,36 @@ namespace Mahzen.Core
                         var messageBytes = Encoding.UTF8.GetBytes(errorProtocolObject.Message);
 
                         binaryWriter.Write(messageBytes.Length);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         binaryWriter.Write(codeBytes);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         binaryWriter.Write(messageBytes);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         break;
                     case IntegerProtocolObject integerProtocolObject:
                         binaryWriter.Write(integerProtocolObject.Value);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         break;
                     case LongProtocolObject longProtocolObject:
                         binaryWriter.Write(longProtocolObject.Value);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         break;
                     case DoubleProtocolObject doubleProtocolObject:
                         binaryWriter.Write(doubleProtocolObject.Value);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         break;
                     case NullProtocolObject nullProtocolObject:
                     case BooleanProtocolObject booleanProtocolObject:
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         break;
                     case ArrayProtocolObject arrayProtocolObject:
                         binaryWriter.Write(arrayProtocolObject.Items.Length);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         binaryWriter.Write(arrayProtocolObject.Items.Span);
                         break;
                     case MapProtocolObject mapProtocolObject:
                         binaryWriter.Write(mapProtocolObject.Items.Length);
-                        binaryWriter.Write(NewLine);
+                        binaryWriter.Write(Separator);
                         foreach (var kv in mapProtocolObject.Items.Span)
                         {
                             binaryWriter.Write(kv.Key);
@@ -99,3 +99,4 @@ namespace Mahzen.Core
         }
     }
 }
+#endif

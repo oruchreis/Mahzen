@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mahzen.Client\Mahzen.Client.csproj" />
+    <ProjectReference Include="..\Mahzen.Core\Mahzen.Core.csproj" />
+  </ItemGroup>
+
+
+  
+</Project>

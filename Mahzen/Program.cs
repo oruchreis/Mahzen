@@ -109,7 +109,9 @@ namespace Mahzen
             
             //Default command invokers
             CommandDispatcher.RegisterInvoker(
-                new ClusterCommandInvoker(), //order is important, cluster must be first for the priority
+                //order is important
+                new NodeCommandInvoker(),
+                new ClusterCommandInvoker(),
                 new StorageCommandInvoker());
 
             //main cancel token for the app

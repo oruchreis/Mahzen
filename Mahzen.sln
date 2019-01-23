@@ -1,13 +1,27 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2046
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28407.52
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen", "Mahzen\Mahzen.csproj", "{DB407345-88FC-4BD2-9975-83FC3E65C550}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mahzen", "Mahzen\Mahzen.csproj", "{DB407345-88FC-4BD2-9975-83FC3E65C550}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Core.Test", "Mahzen.Core.Test\Mahzen.Core.Test.csproj", "{A17C520A-F5E8-462B-B757-D17251DE4020}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mahzen.Core.Test", "Mahzen.Core.Test\Mahzen.Core.Test.csproj", "{A17C520A-F5E8-462B-B757-D17251DE4020}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Core", "Mahzen.Core\Mahzen.Core.csproj", "{674E349A-F2AF-41BA-BE63-72C34001205A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mahzen.Core", "Mahzen.Core\Mahzen.Core.csproj", "{674E349A-F2AF-41BA-BE63-72C34001205A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MahzenCli", "MahzenCli\MahzenCli.csproj", "{013A2865-81A3-47F0-A6E5-D818BCAE776F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Client", "Mahzen.Client\Mahzen.Client.csproj", "{3C048329-9C99-4D6F-9D52-3A7B065171C7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A48EEC69-396D-42B6-A866-634A44664BF1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{3D876F34-FF40-461F-AFAA-963401B5822F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client", "Client", "{DC068818-3019-4CBE-9955-6734C8BBD5B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Applications", "Applications", "{04F9E38E-AD69-4E80-902A-A9A0920B1CFE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mahzen.Management", "Mahzen.Management\Mahzen.Management.csproj", "{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,9 +41,29 @@ Global
 		{674E349A-F2AF-41BA-BE63-72C34001205A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{674E349A-F2AF-41BA-BE63-72C34001205A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{674E349A-F2AF-41BA-BE63-72C34001205A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{013A2865-81A3-47F0-A6E5-D818BCAE776F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{013A2865-81A3-47F0-A6E5-D818BCAE776F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{013A2865-81A3-47F0-A6E5-D818BCAE776F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{013A2865-81A3-47F0-A6E5-D818BCAE776F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C048329-9C99-4D6F-9D52-3A7B065171C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C048329-9C99-4D6F-9D52-3A7B065171C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C048329-9C99-4D6F-9D52-3A7B065171C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C048329-9C99-4D6F-9D52-3A7B065171C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DB407345-88FC-4BD2-9975-83FC3E65C550} = {04F9E38E-AD69-4E80-902A-A9A0920B1CFE}
+		{A17C520A-F5E8-462B-B757-D17251DE4020} = {A48EEC69-396D-42B6-A866-634A44664BF1}
+		{674E349A-F2AF-41BA-BE63-72C34001205A} = {3D876F34-FF40-461F-AFAA-963401B5822F}
+		{013A2865-81A3-47F0-A6E5-D818BCAE776F} = {04F9E38E-AD69-4E80-902A-A9A0920B1CFE}
+		{3C048329-9C99-4D6F-9D52-3A7B065171C7} = {DC068818-3019-4CBE-9955-6734C8BBD5B1}
+		{49D76D4B-F24A-40F7-9764-AF2A820FFCFB} = {04F9E38E-AD69-4E80-902A-A9A0920B1CFE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6928BE58-7D47-4F29-89B6-D7504B645477}

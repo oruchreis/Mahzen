@@ -1,4 +1,6 @@
+#if !NET472
 using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -119,7 +121,7 @@ namespace Mahzen.Core
             var commandStartPosition = _currentPosition - 1;
             switch (firstByte)
             {
-                #region Simple String
+#region Simple String
                 case (byte)TokenType.String:
                     {
                         if (!ReadUntil(new[] { (byte)TokenType.Separator }, out var bytes))
@@ -134,8 +136,8 @@ namespace Mahzen.Core
                             Value = Encoding.UTF8.GetString(bytes)
                         };
                     }
-                #endregion
-                #region Blob
+#endregion
+#region Blob
                 case (byte)TokenType.Blob:
                     {
                         if (!ReadInteger(out var length))
@@ -172,9 +174,9 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
-                #region Error
+#region Error
 
                 case (byte)TokenType.Error:
                     {
@@ -227,9 +229,9 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
-                #region Integer
+#region Integer
 
                 case (byte)TokenType.Integer:
                     {
@@ -253,9 +255,9 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
-                #region Long
+#region Long
 
                 case (byte)TokenType.Long:
                     {
@@ -279,9 +281,9 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
-                #region Double
+#region Double
 
                 case (byte)TokenType.Double:
                     {
@@ -305,9 +307,9 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
-                #region Null
+#region Null
 
                 case (byte)TokenType.Null:
                     {
@@ -321,9 +323,9 @@ namespace Mahzen.Core
                         return new NullProtocolObject();
                     }
 
-                #endregion
+#endregion
 
-                #region Boolean
+#region Boolean
 
                 case (byte)TokenType.True:
                     {
@@ -355,9 +357,9 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
-                #region Array
+#region Array
 
                 case (byte)TokenType.Array:
                     {
@@ -402,9 +404,9 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
-                #region Map
+#region Map
 
                 case (byte)TokenType.Map:
                     {
@@ -464,7 +466,7 @@ namespace Mahzen.Core
                         };
                     }
 
-                #endregion
+#endregion
 
 
                 default:
@@ -582,3 +584,4 @@ namespace Mahzen.Core
         }
     }
 }
+#endif
