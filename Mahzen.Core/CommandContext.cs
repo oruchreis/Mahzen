@@ -1,36 +1,62 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace Mahzen.Core
 {
+    /// <summary>
+    /// Every invoking process of a command has a context which keeps required data.
+    /// </summary>
     public class CommandContext: IDisposable
     {
         private static readonly AsyncLocal<CommandContext> _current;
 
+        /// <summary>
+        /// Current command context.
+        /// </summary>
         public static CommandContext Current => _current.Value;
 
+        /// <summary>
+        /// Parent command context
+        /// </summary>
+        public readonly CommandContext Parent;
+
+        /// <summary>
+        /// Creates a command context, and sets this as the current context in the execution context.
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="response"></param>
         public CommandContext(Command command, MessageProtocolBuilder response)
         {
+            Parent = _current.Value;
             _current.Value = this;
             Command = command;
             Response = response;
         }
 
+        /// <summary>
+        /// Current invoking command in the context
+        /// </summary>
         public Command Command { get; }
+
+        /// <summary>
+        /// Response of the command.
+        /// </summary>
         public MessageProtocolBuilder Response { get; }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    _current.Value = null;
+                    _current.Value = Parent;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -46,7 +72,9 @@ namespace Mahzen.Core
         //   Dispose(false);
         // }
 
-        // This code added to correctly implement the disposable pattern.
+        /// <summary>
+        /// 
+        /// </summary>
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.

@@ -1,50 +1,62 @@
 using System;
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Mahzen.Core
 {
-    /* Mahzen Message Protocol(MMP) Format
-     * 
-     * This format is similar to RESP format,
-     * but I have changed some parts as a design decision
-     * 
-     * MMP Types:
-     * - SimpleString:  $<utf8_bytes_without_'\n'>\n
-     * - Blob:          B<length>\n<bytes>\n
-     * - Errors:        !<length>\n<error_code>\n<error_message_utf8_string>\n
-     * - Integer:       I<integer_4_bytes>\n
-     * - Long:          L<long_8_bytes>\n
-     * - Double:        D<double_8_bytes>\n
-     * - Null:          N\n
-     * - Boolean:       0\n or 1\n
-     * - Array:         *<count>\n<items>        =>items can be any type
-     * - Map:           %<count>\n<key><value>   =>key and values can be any type
-     *
-     * length: int, 4 bytes
-     * error_code: ascii string, 8 bytes
-     * count: int, 4 bytes
-     * 
-     */
+    /// <summary>
+    /// Message Protocol Parser
+    /// </summary>
+    /// <remarks>
+    /// <![CDATA[
+    /// Mahzen Message Protocol(MMP) Format
+    /// 
+    /// This format is similar to RESP format,
+    /// but I have changed some parts as a design decision
+    /// 
+    /// MMP Types:
+    /// - SimpleString:  $<utf8_bytes_without_'\n'>\n
+    /// - Blob:          B<length>\n<bytes>\n
+    /// - Errors:        !<length>\n<error_code>\n<error_message_utf8_string>\n
+    /// - Integer:       I<integer_4_bytes>\n
+    /// - Long:          L<long_8_bytes>\n
+    /// - Double:        D<double_8_bytes>\n
+    /// - Null:          N\n
+    /// - Boolean:       0\n or 1\n
+    /// - Array:         *<count>\n<items>        =>items can be any type
+    /// - Map:           %<count>\n<key><value>   =>key and values can be any type
+    /// 
+    /// length: int, 4 bytes
+    /// error_code: ascii string, 8 bytes
+    /// count: int, 4 bytes
+    /// ]]>
+    /// </remarks>
     public ref struct Parser
     {
         private Span<byte> _buffer;
-        private Memory<MessageProtocolObject> _result;
-        private int _resultIndex;
+        private readonly Memory<MessageProtocolObject> _result;
         private int _currentPosition;
-        private Action _resizeResult;
+        private readonly Action _resizeResult;
 
+        /// <summary>
+        /// Creates Parser
+        /// </summary>
+        /// <param name="buffer">The buffer to parse</param>
+        /// <param name="result">The fixed sized result buffer to fill with parsing result</param>
+        /// <param name="resizeResult">If the result buffer is full, then this action will be called. If it is null, then throws an exception when the buffer is full</param>
         public Parser(Span<byte> buffer, Memory<MessageProtocolObject> result, Action resizeResult = null)
         {
             _buffer = buffer;
             _result = result;
             _currentPosition = 0;
-            _resultIndex = 0;
+            ResultIndex = 0;
             _resizeResult = resizeResult;
         }
 
+        /// <summary>
+        /// Parse the remaning buffer.
+        /// </summary>
         public void Parse()
         {
             //EOB: End of Buffer
@@ -59,14 +71,14 @@ namespace Mahzen.Core
                     var protocolObject = ReadProtocolObject(firstByte);
                     if (protocolObject == null)
                         return; //EOB
-                    if (_resultIndex + 1 >= span.Length) //result is full, need more space.
+                    if (ResultIndex + 1 >= span.Length) //result is full, need more space.
                     {
                         if (_resizeResult == null)
                             throw new BufferOverflowException("The result buffer given to parser is not enough to hold parser results. Use resizeResult parameter to expand the buffer.");
                         _resizeResult();
                     }
 
-                    span[_resultIndex++] = protocolObject;
+                    span[ResultIndex++] = protocolObject;
                 }
                 catch (SyntaxErrorException e)
                 {
@@ -79,14 +91,25 @@ namespace Mahzen.Core
             }
         }
 
-        public Span<byte> RemeaningBuffer => _buffer.Slice(_currentPosition);
-        public int ResultIndex => _resultIndex;
+        /// <summary>
+        /// Remaining buffer after the parse method.
+        /// </summary>
+        public Span<byte> RemainingBuffer => _buffer.Slice(_currentPosition);
 
+        /// <summary>
+        /// The pointer at the result buffer that indicates empty items to fill with the parsing results.
+        /// </summary>
+        public int ResultIndex { get; private set; }
+
+        /// <summary>
+        /// Appends a new buffer to the main buffer, resets the current position.
+        /// </summary>
+        /// <param name="nextBuffer"></param>
         public void SlideBuffer(Span<byte> nextBuffer)
         {
-            var newBuffer = new Span<byte>(new byte[RemeaningBuffer.Length + nextBuffer.Length]);
-            RemeaningBuffer.CopyTo(newBuffer.Slice(0, RemeaningBuffer.Length));
-            nextBuffer.CopyTo(newBuffer.Slice(RemeaningBuffer.Length));
+            var newBuffer = new Span<byte>(new byte[RemainingBuffer.Length + nextBuffer.Length]);
+            RemainingBuffer.CopyTo(newBuffer.Slice(0, RemainingBuffer.Length));
+            nextBuffer.CopyTo(newBuffer.Slice(RemainingBuffer.Length));
             _buffer = newBuffer;
             _currentPosition = 0;
         }

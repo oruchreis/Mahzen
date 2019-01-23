@@ -50,7 +50,7 @@ namespace Mahzen.Core
             nextBuffer.CopyTo(buffer.Slice(previousRemainingBuffer.Length));
             var parser = new Parser(buffer, result, resizeResult);
             parser.Parse();
-            return (parser.ResultIndex, parser.RemeaningBuffer.Length);
+            return (parser.ResultIndex, parser.RemainingBuffer.Length);
         }
 
         private static List<Command> ParseCommands(Memory<MessageProtocolObject> protocolObjects)

@@ -6,11 +6,24 @@ using System.Threading.Tasks;
 
 namespace Mahzen.Core
 {
+    /// <summary>
+    /// Keeps and registers command invokers, gets commands over a stream, and dispatches the commands to the related invoker.
+    /// </summary>
     public abstract class CommandDispatcher : IDisposable
     {
         private static readonly AsyncLocal<CommandDispatcher> _current = new AsyncLocal<CommandDispatcher>();
         private static readonly List<ICommandInvoker> _invokers = new List<ICommandInvoker>();
         private static readonly ReaderWriterLockSlim _invokersLocker = new ReaderWriterLockSlim();
+
+        /// <summary>
+        /// Gets current dispatcher in the execution context.
+        /// </summary>
+        public static CommandDispatcher Current => _current.Value;
+
+        /// <summary>
+        /// Registers command invokers.
+        /// </summary>
+        /// <param name="invokers"></param>
         public static void RegisterInvoker(params ICommandInvoker[] invokers)
         {
             _invokersLocker.EnterWriteLock();
@@ -24,6 +37,10 @@ namespace Mahzen.Core
             }
         }
 
+        /// <summary>
+        /// Gets the registered invokers. It will use a read lock, so use wisely.
+        /// </summary>
+        /// <returns></returns>
         public static ICollection<ICommandInvoker> GetInvokers()
         {
             _invokersLocker.EnterReadLock();
@@ -37,11 +54,31 @@ namespace Mahzen.Core
             }
         }
 
+        /// <summary>
+        /// Associated stream which keeps the unparsed commands.
+        /// </summary>
         protected readonly Stream Stream;
+
+        /// <summary>
+        /// Cancellation Token 
+        /// </summary>
         protected readonly CancellationToken CancelToken;
+
+        /// <summary>
+        /// Response stream.
+        /// </summary>
         protected readonly MessageProtocolBuilder Response;
+
+        /// <summary>
+        /// The parent dispatcher if there is any.
+        /// </summary>
         protected readonly CommandDispatcher ParentDispatcher;
 
+        /// <summary>
+        /// Creates a command dispatcher. Dont forget to dispose it.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="cancelToken"></param>
         public CommandDispatcher(Stream stream, in CancellationToken cancelToken)
         {
             ParentDispatcher = _current.Value;
@@ -51,11 +88,19 @@ namespace Mahzen.Core
             Response = new MessageProtocolBuilder(Stream);
         }
 
+        /// <summary>
+        /// Gets command requests from the stream, and dispatches the commands to the registered invokers.
+        /// </summary>
+        /// <returns></returns>
         public abstract Task HandleAsync();
 
         #region IDisposable Support
         private bool disposedValue; // To detect redundant calls
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -79,7 +124,9 @@ namespace Mahzen.Core
         //   Dispose(false);
         // }
 
-        // This code added to correctly implement the disposable pattern.
+        /// <summary>
+        /// 
+        /// </summary>
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.

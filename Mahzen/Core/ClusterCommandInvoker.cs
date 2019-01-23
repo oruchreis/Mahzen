@@ -7,7 +7,7 @@ namespace Mahzen.Core
 {
     class ClusterCommandInvoker : ICommandInvoker
     {
-        private static HashSet<string> _keywords = new HashSet<string>
+        private static readonly HashSet<string> _keywords = new HashSet<string>
         {
 
         };

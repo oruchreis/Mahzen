@@ -105,7 +105,7 @@ namespace Mahzen.Tests
                 Trace.WriteLine($"Parse: {stopWatch.Elapsed.TotalMilliseconds}ms");
                 stopWatch.Restart();
 
-                Assert.AreEqual(0, parser.RemeaningBuffer.Length);
+                Assert.AreEqual(0, parser.RemainingBuffer.Length);
 
                 var parsedString = parsed[0] as StringProtocolObject;
                 Assert.IsInstanceOfType(parsed[0], typeof(StringProtocolObject));

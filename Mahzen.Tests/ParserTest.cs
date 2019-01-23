@@ -70,7 +70,7 @@ namespace Mahzen.Tests
             Assert.IsNotNull(parsedBlobData);
             Assert.AreEqual(TokenType.Blob, parsedBlobData.TokenType);
             CollectionAssert.AreEqual(expectedBlobData, parsedBlobData.Bytes.ToArray());
-            Assert.AreEqual(0, parser.RemeaningBuffer.Length);
+            Assert.AreEqual(0, parser.RemainingBuffer.Length);
         }
         
         [TestMethod]
@@ -185,7 +185,7 @@ namespace Mahzen.Tests
 
             var result = resultMem.Span.Slice(0, parser.ResultIndex);
 
-            Assert.AreEqual(0, parser.RemeaningBuffer.Length);
+            Assert.AreEqual(0, parser.RemainingBuffer.Length);
             Assert.AreEqual(11, result.Length);
 
             var parsedString = result[0] as StringProtocolObject;
@@ -350,7 +350,7 @@ namespace Mahzen.Tests
 
                 var parsed = resultMem.Span.Slice(0, parser.ResultIndex);
 
-                Assert.AreEqual(27, parser.RemeaningBuffer.Length);
+                Assert.AreEqual(27, parser.RemainingBuffer.Length);
 
                 var parsedBlob = parsed[0] as BlobProtocolObject;
                 Assert.IsInstanceOfType(parsed[0], typeof(BlobProtocolObject));
@@ -360,7 +360,7 @@ namespace Mahzen.Tests
                 parser.Parse();
                 parsed = resultMem.Span.Slice(0, parser.ResultIndex);
 
-                Assert.AreEqual(9, parser.RemeaningBuffer.Length);
+                Assert.AreEqual(9, parser.RemainingBuffer.Length);
 
                 var parsedError = parsed[1] as ErrorProtocolObject;
                 Assert.IsInstanceOfType(parsed[1], typeof(ErrorProtocolObject));
@@ -394,7 +394,7 @@ namespace Mahzen.Tests
                 parser.Parse();
                 parsed = resultMem.Span.Slice(0, parser.ResultIndex);
 
-                Assert.AreEqual(0, parser.RemeaningBuffer.Length);
+                Assert.AreEqual(0, parser.RemainingBuffer.Length);
 
                 var parsedArray = parsed[8] as ArrayProtocolObject;
                 Assert.IsInstanceOfType(parsed[8], typeof(ArrayProtocolObject));

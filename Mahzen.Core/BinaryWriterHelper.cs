@@ -5,15 +5,28 @@ using System.Text;
 
 namespace Mahzen.Core
 {
-    public static class GeneratorHelper
+    /// <summary>
+    /// BinaryWriter helpers to work with <see cref="MessageProtocolObject"/>
+    /// </summary>
+    public static class BinaryWriterHelper
     {
         private const char NewLine = '\n';
 
+        /// <summary>
+        /// Writes multiple <see cref="MessageProtocolObject"/> to the <paramref name="binaryWriter"/>
+        /// </summary>
+        /// <param name="binaryWriter"></param>
+        /// <param name="datas"></param>
         public static void Write(this BinaryWriter binaryWriter, params MessageProtocolObject[] datas)
         {
             Write(binaryWriter, datas.AsSpan());
         }
 
+        /// <summary>
+        /// Writes multiple <see cref="MessageProtocolObject"/> to the <paramref name="binaryWriter"/>
+        /// </summary>
+        /// <param name="binaryWriter"></param>
+        /// <param name="datas"></param>
         public static void Write(this BinaryWriter binaryWriter, Span<MessageProtocolObject> datas)
         {
             foreach (var data in datas)
