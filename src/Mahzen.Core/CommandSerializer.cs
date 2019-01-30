@@ -28,7 +28,7 @@ namespace Mahzen.Core
             Memory<MessageProtocolObject> protocolObjects = protocolObjectBuffer;
             var parserIndex = 0;
             Memory<byte> remainingBuffer = new byte[0];
-            while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
+            while ((bytesRead = await stream.ReadAsync(buffer).ConfigureAwait(false)) > 0)
             {
                 var (currentParserIndex, remeaningBufferLength) = ParseProtocolObjects(remainingBuffer.Span, buffer.Span.Slice(0, bytesRead),
                     protocolObjects.Slice(parserIndex),

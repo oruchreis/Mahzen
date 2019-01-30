@@ -6,13 +6,19 @@ namespace Mahzen.Core
     /// <summary>
     /// Base protocol builder which implements basic implementations.
     /// </summary>
-    public abstract class ProtocolBuilder : IProtocolBuilder
+    public abstract class ProtocolWriter : IProtocolWriter
     {
         /// <summary>
         /// Handles the writing of <see cref="MessageProtocolObject"/>
         /// </summary>
         /// <param name="protocolObject"></param>
         protected abstract void HandleWrite(MessageProtocolObject protocolObject);
+
+        /// <inheritdoc />
+        public virtual void Write(MessageProtocolObject protocolObject)
+        {
+            HandleWrite(protocolObject);
+        }
 
         /// <inheritdoc />
         public virtual void Write(string value)
@@ -63,9 +69,9 @@ namespace Mahzen.Core
         }
 
         /// <inheritdoc />
-        public virtual void Write(params Action<IProtocolBuilder>[] arrayItemBuilders)
+        public virtual void Write(params Action<IProtocolWriter>[] arrayItemBuilders)
         {
-            var arrayProtocolBuilder = new ArrayProtocolBuilder();
+            var arrayProtocolBuilder = new ArrayProtocolWriter();
             foreach (var action in arrayItemBuilders)
             {
                 action(arrayProtocolBuilder);
@@ -74,10 +80,10 @@ namespace Mahzen.Core
         }
 
         /// <inheritdoc />
-        public virtual void Write(params (Action<IProtocolBuilder> KeyBuilder, Action<IProtocolBuilder> ValueBuilder)[] mapItemBuilders)
+        public virtual void Write(params (Action<IProtocolWriter> KeyBuilder, Action<IProtocolWriter> ValueBuilder)[] mapItemBuilders)
         {
-            var mapKeyProtocolBuilder = new MapItemProtocolBuilder();
-            var mapValueProtocolBuilder = new MapItemProtocolBuilder();
+            var mapKeyProtocolBuilder = new MapItemProtocolWriter();
+            var mapValueProtocolBuilder = new MapItemProtocolWriter();
 
             var items = new List<KeyValuePair<MessageProtocolObject, MessageProtocolObject>>();
             foreach (var (KeyBuilder, ValueBuilder) in mapItemBuilders)
@@ -91,15 +97,28 @@ namespace Mahzen.Core
         }
 
         /// <inheritdoc />
-        public virtual ArrayProtocolBuilder BeginArray()
+        public virtual ArrayProtocolWriter BeginArray()
         {
-            return new ArrayProtocolBuilder(items => HandleWrite(new ArrayProtocolObject{ Items = items }));
+            return new ArrayProtocolWriter(items => HandleWrite(new ArrayProtocolObject{ Items = items }));
         }
 
         /// <inheritdoc />
-        public virtual MapProtocolBuilder BeginMap()
+        public virtual MapProtocolWriter BeginMap()
         {
-            return new MapProtocolBuilder(items => HandleWrite(new MapProtocolObject { Items = items }));
+            return new MapProtocolWriter(items => HandleWrite(new MapProtocolObject { Items = items }));
+        }
+
+        /// <inheritdoc />
+        public virtual void Write(Command command)
+        {
+            using(var array = BeginArray())
+            {
+                array.Write(command.Keyword);
+                foreach (var item in command.Parameters.Span)
+                {
+                    array.Write(item);
+                }
+            }
         }
     }
 }

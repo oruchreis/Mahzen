@@ -67,7 +67,7 @@ namespace Mahzen.Core
         /// <summary>
         /// Response stream.
         /// </summary>
-        protected readonly MessageProtocolBuilder Response;
+        protected readonly MessageProtocolWriter Response;
 
         /// <summary>
         /// The parent dispatcher if there is any.
@@ -85,7 +85,7 @@ namespace Mahzen.Core
             _current.Value = this;
             Stream = stream;
             CancelToken = cancelToken;
-            Response = new MessageProtocolBuilder(Stream);
+            Response = new MessageProtocolWriter(Stream);
         }
 
         /// <summary>

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 namespace Mahzen.Core
 {
     /// <summary>
-    /// The Protocol Builder that writes message protocols to an output stream.
+    /// The Protocol Writer that writes message protocols to an output stream.
     /// </summary>
-    public class MessageProtocolBuilder : ProtocolBuilder, IDisposable
+    public class MessageProtocolWriter : ProtocolWriter, IDisposable
     {
         //binarywriter will block writes, so we must use faster stream to write then flush this memory stream to output stream.
         private readonly MemoryStream _internalBuffer = new MemoryStream();
@@ -19,7 +19,7 @@ namespace Mahzen.Core
         /// 
         /// </summary>
         /// <param name="outputStream"></param>
-        public MessageProtocolBuilder(Stream outputStream)
+        public MessageProtocolWriter(Stream outputStream)
         {
             _binaryWriter = new BinaryWriter(_internalBuffer, Encoding.UTF8);
             _outputStream = outputStream;
@@ -50,7 +50,7 @@ namespace Mahzen.Core
         }
 
         // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~MessageProtocolBuilder() {
+        // ~MessageProtocolWriter() {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
         // }

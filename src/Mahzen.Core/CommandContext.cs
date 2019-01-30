@@ -25,7 +25,7 @@ namespace Mahzen.Core
         /// </summary>
         /// <param name="command"></param>
         /// <param name="response"></param>
-        public CommandContext(Command command, MessageProtocolBuilder response)
+        public CommandContext(Command command, MessageProtocolWriter response)
         {
             Parent = _current.Value;
             _current.Value = this;
@@ -41,7 +41,7 @@ namespace Mahzen.Core
         /// <summary>
         /// Response of the command.
         /// </summary>
-        public MessageProtocolBuilder Response { get; }
+        public MessageProtocolWriter Response { get; }
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

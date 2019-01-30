@@ -6,21 +6,21 @@ namespace Mahzen.Core
     /// <summary>
     /// Using for creating map protocol objects by begin-end method.
     /// </summary>
-    public class MapProtocolBuilder: IDisposable
+    public class MapProtocolWriter: IDisposable
     {
         private readonly Action<Memory<KeyValuePair<MessageProtocolObject, MessageProtocolObject>>> _endMapAction;
-        private readonly MapItemProtocolBuilder _mapKeyProtocolBuilder;
-        private readonly MapItemProtocolBuilder _mapValueProtocolBuilder;
+        private readonly MapItemProtocolWriter _mapKeyProtocolBuilder;
+        private readonly MapItemProtocolWriter _mapValueProtocolBuilder;
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="endMapAction"></param>
-        public MapProtocolBuilder(Action<Memory<KeyValuePair<MessageProtocolObject, MessageProtocolObject>>> endMapAction)
+        public MapProtocolWriter(Action<Memory<KeyValuePair<MessageProtocolObject, MessageProtocolObject>>> endMapAction)
         {
             _endMapAction = endMapAction;
-            _mapKeyProtocolBuilder = new MapItemProtocolBuilder();
-            _mapValueProtocolBuilder = new MapItemProtocolBuilder();
+            _mapKeyProtocolBuilder = new MapItemProtocolWriter();
+            _mapValueProtocolBuilder = new MapItemProtocolWriter();
         }
 
         #region IDisposable Support
@@ -47,7 +47,7 @@ namespace Mahzen.Core
         }
 
         // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~MapProtocolBuilder() {
+        // ~MapProtocolWriter() {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
         // }
@@ -85,7 +85,7 @@ namespace Mahzen.Core
         /// </summary>
         /// <param name="keyBuilder"></param>
         /// <param name="valueBuilder"></param>
-        public void Write(Action<IProtocolBuilder> keyBuilder, Action<IProtocolBuilder> valueBuilder)
+        public void Write(Action<IProtocolWriter> keyBuilder, Action<IProtocolWriter> valueBuilder)
         {
             keyBuilder(_mapKeyProtocolBuilder);
             valueBuilder(_mapValueProtocolBuilder);

@@ -6,7 +6,7 @@ namespace Mahzen.Core
     /// <summary>
     /// Using for creating array protocol objects
     /// </summary>
-    public class ArrayProtocolBuilder : ProtocolBuilder, IDisposable
+    public class ArrayProtocolWriter : ProtocolWriter, IDisposable
     {
         private readonly List<MessageProtocolObject> _items = new List<MessageProtocolObject>();
 
@@ -25,7 +25,7 @@ namespace Mahzen.Core
         /// <summary>
         /// 
         /// </summary>
-        public ArrayProtocolBuilder()
+        public ArrayProtocolWriter()
         {
 
         }
@@ -36,7 +36,7 @@ namespace Mahzen.Core
         /// Using for begin-end method.
         /// </summary>
         /// <param name="endArrayAction"></param>
-        public ArrayProtocolBuilder(Action<Memory<MessageProtocolObject>> endArrayAction)
+        public ArrayProtocolWriter(Action<Memory<MessageProtocolObject>> endArrayAction)
         {
             _endArrayAction = endArrayAction;
         }
@@ -64,7 +64,7 @@ namespace Mahzen.Core
         }
 
         // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~ArrayProtocolBuilder() {
+        // ~ArrayProtocolWriter() {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);
         // }

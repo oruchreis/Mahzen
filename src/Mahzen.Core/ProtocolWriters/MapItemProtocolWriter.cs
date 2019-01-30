@@ -3,7 +3,7 @@
     /// <summary>
     /// Using for creating map protocol object items
     /// </summary>
-    public class MapItemProtocolBuilder : ProtocolBuilder
+    public class MapItemProtocolWriter : ProtocolWriter
     {
         /// <summary>
         /// Created map item

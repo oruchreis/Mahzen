@@ -5,8 +5,14 @@ namespace Mahzen.Core
     /// <summary>
     /// Protocol Builder Interface
     /// </summary>
-    public interface IProtocolBuilder
+    public interface IProtocolWriter
     {
+        /// <summary>
+        /// Writes protocol object
+        /// </summary>
+        /// <param name="protocolObject"></param>
+        void Write(MessageProtocolObject protocolObject);
+
         /// <summary>
         /// Writes string value 
         /// </summary>
@@ -59,25 +65,30 @@ namespace Mahzen.Core
         /// Writes an array.
         /// </summary>
         /// <param name="arrayItemBuilders"></param>
-        void Write(params Action<IProtocolBuilder>[] arrayItemBuilders);
+        void Write(params Action<IProtocolWriter>[] arrayItemBuilders);
 
         /// <summary>
         /// Writes a map.
         /// </summary>
         /// <param name="mapItemBuilders"></param>
-        void Write(params (Action<IProtocolBuilder> KeyBuilder, Action<IProtocolBuilder> ValueBuilder)[] mapItemBuilders);
+        void Write(params (Action<IProtocolWriter> KeyBuilder, Action<IProtocolWriter> ValueBuilder)[] mapItemBuilders);
 
         /// <summary>
         /// Helper method to create an array by begin-end methods. Can be used with using.
         /// </summary>
         /// <returns></returns>
-        ArrayProtocolBuilder BeginArray();
+        ArrayProtocolWriter BeginArray();
 
         /// <summary>
         /// Helper method to create a map by begin-end methods. Can be used with using.
         /// </summary>
         /// <returns></returns>
-        MapProtocolBuilder BeginMap();
+        MapProtocolWriter BeginMap();
 
+        /// <summary>
+        /// Converts command to message protocol objects and writes them.
+        /// </summary>
+        /// <param name="command"></param>
+        void Write(Command command);
     }
 }

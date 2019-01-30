@@ -16,7 +16,7 @@ namespace Mahzen.Core.Test
         {
             using (var memoryStream = new MemoryStream())
             {
-                using (var builder = new MessageProtocolBuilder(memoryStream))
+                using (var builder = new MessageProtocolWriter(memoryStream))
                 {
                     builder.Write(
                         ab => ab.Write("GET"),
@@ -52,7 +52,7 @@ namespace Mahzen.Core.Test
         {
             using (var memoryStream = new MemoryStream())
             {
-                using (var builder = new MessageProtocolBuilder(memoryStream))
+                using (var builder = new MessageProtocolWriter(memoryStream))
                 {
                     using (var arrayBuilder = builder.BeginArray())
                     {
